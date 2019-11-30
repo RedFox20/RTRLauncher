@@ -1,0 +1,3 @@
+[submodule "ReCpp"]
+	path = lib/ReCpp
+	url = https://github.com/RedFox20/ReCpp.git
