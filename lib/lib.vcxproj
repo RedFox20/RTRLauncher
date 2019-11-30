@@ -1,0 +1,158 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B76AA59E-BAAA-494E-B89D-77993A5DFD8B}</ProjectGuid>
+    <RootNamespace>lib</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir);ReCpp;$(IncludePath)</IncludePath>
+    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir);ReCpp;$(IncludePath)</IncludePath>
+    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="enumerator.h" />
+    <ClInclude Include="fnv.h" />
+    <ClInclude Include="io\binary_reader.h" />
+    <ClInclude Include="io\binary_writer.h" />
+    <ClInclude Include="io\console.h" />
+    <ClInclude Include="log.h" />
+    <ClInclude Include="memory_map.h" />
+    <ClInclude Include="process_fork.h" />
+    <ClInclude Include="process_info.h" />
+    <ClInclude Include="process_loader.h" />
+    <ClInclude Include="ReCpp\rpp\binary_serializer.h" />
+    <ClInclude Include="ReCpp\rpp\binary_stream.h" />
+    <ClInclude Include="ReCpp\rpp\close_sync.h" />
+    <ClInclude Include="ReCpp\rpp\collections.h" />
+    <ClInclude Include="ReCpp\rpp\concurrent_queue.h" />
+    <ClInclude Include="ReCpp\rpp\config.h" />
+    <ClInclude Include="ReCpp\rpp\debugging.h" />
+    <ClInclude Include="ReCpp\rpp\delegate.h" />
+    <ClInclude Include="ReCpp\rpp\file_io.h" />
+    <ClInclude Include="ReCpp\rpp\future.h" />
+    <ClInclude Include="ReCpp\rpp\json.h" />
+    <ClInclude Include="ReCpp\rpp\memory_pool.h" />
+    <ClInclude Include="ReCpp\rpp\minmax.h" />
+    <ClInclude Include="ReCpp\rpp\obfuscated_string.h" />
+    <ClInclude Include="ReCpp\rpp\scope_guard.h" />
+    <ClInclude Include="ReCpp\rpp\sockets.h" />
+    <ClInclude Include="ReCpp\rpp\sprint.h" />
+    <ClInclude Include="ReCpp\rpp\stack_trace.h" />
+    <ClInclude Include="ReCpp\rpp\strview.h" />
+    <ClInclude Include="ReCpp\rpp\tests.h" />
+    <ClInclude Include="ReCpp\rpp\thread_pool.h" />
+    <ClInclude Include="ReCpp\rpp\timer.h" />
+    <ClInclude Include="ReCpp\rpp\vec.h" />
+    <ClInclude Include="remote_dll_injector.h" />
+    <ClInclude Include="shadowlib.h" />
+    <ClInclude Include="utf8.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="fnv.cpp" />
+    <ClCompile Include="io\console.cpp" />
+    <ClCompile Include="log.cpp" />
+    <ClCompile Include="memory_map.cpp" />
+    <ClCompile Include="process_fork.cpp" />
+    <ClCompile Include="process_info.cpp" />
+    <ClCompile Include="process_loader.cpp" />
+    <ClCompile Include="ReCpp\rpp\binary_stream.cpp" />
+    <ClCompile Include="ReCpp\rpp\debugging.cpp" />
+    <ClCompile Include="ReCpp\rpp\file_io.cpp" />
+    <ClCompile Include="ReCpp\rpp\json.cpp" />
+    <ClCompile Include="ReCpp\rpp\sockets.cpp" />
+    <ClCompile Include="ReCpp\rpp\sprint.cpp" />
+    <ClCompile Include="ReCpp\rpp\stack_trace.cpp" />
+    <ClCompile Include="ReCpp\rpp\strview.cpp" />
+    <ClCompile Include="ReCpp\rpp\tests.cpp" />
+    <ClCompile Include="ReCpp\rpp\thread_pool.cpp" />
+    <ClCompile Include="ReCpp\rpp\timer.cpp" />
+    <ClCompile Include="ReCpp\rpp\vec.cpp" />
+    <ClCompile Include="remote_dll_injector.cpp" />
+    <ClCompile Include="shadowlib.cpp" />
+    <ClCompile Include="utf8.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="ReCpp\rpp\binary_reader.natvis" />
+    <Natvis Include="ReCpp\rpp\collections.natvis" />
+    <Natvis Include="ReCpp\rpp\strview.natvis" />
+    <Natvis Include="ReCpp\rpp\vec.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReCpp\rpp\file_io.mm" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

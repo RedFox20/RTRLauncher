@@ -1,0 +1,136 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Detours">
+      <UniqueIdentifier>{b68abb7b-c176-4e3f-a13d-7a27a64b8a80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="distorm">
+      <UniqueIdentifier>{6e015819-2329-4867-b060-3d360dff55f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DllMain.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="RomePatcher.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="Detours\creatwth.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="Detours\detours.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="Detours\disasm.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="Detours\image.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="Detours\modules.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="ASM.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="distorm\decoder.c">
+      <Filter>distorm</Filter>
+    </ClCompile>
+    <ClCompile Include="distorm\distorm.c">
+      <Filter>distorm</Filter>
+    </ClCompile>
+    <ClCompile Include="distorm\instructions.c">
+      <Filter>distorm</Filter>
+    </ClCompile>
+    <ClCompile Include="distorm\insts.c">
+      <Filter>distorm</Filter>
+    </ClCompile>
+    <ClCompile Include="distorm\mnemonics.c">
+      <Filter>distorm</Filter>
+    </ClCompile>
+    <ClCompile Include="distorm\operands.c">
+      <Filter>distorm</Filter>
+    </ClCompile>
+    <ClCompile Include="distorm\prefix.c">
+      <Filter>distorm</Filter>
+    </ClCompile>
+    <ClCompile Include="distorm\textdefs.c">
+      <Filter>distorm</Filter>
+    </ClCompile>
+    <ClCompile Include="distorm\wstring.c">
+      <Filter>distorm</Filter>
+    </ClCompile>
+    <ClCompile Include="RomeAPI.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryModule.c">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameEngine.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="RomePatcher.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="Detours\detours.h">
+      <Filter>Detours</Filter>
+    </ClInclude>
+    <ClInclude Include="Detours\detver.h">
+      <Filter>Detours</Filter>
+    </ClInclude>
+    <ClInclude Include="RtwTypes.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="ASM.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\config.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\decoder.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\distorm.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\instructions.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\insts.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\mnemonics.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\operands.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\prefix.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\textdefs.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\wstring.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="distorm\x86defs.h">
+      <Filter>distorm</Filter>
+    </ClInclude>
+    <ClInclude Include="RomeAPI.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryModule.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

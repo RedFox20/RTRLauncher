@@ -1,0 +1,141 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{e228b5c6-e6af-4b8b-a14b-6ee8234817ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoreParser">
+      <UniqueIdentifier>{96888347-0c94-4034-aa26-f798f11398ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{0af224a0-f8fe-4311-91fe-0ce882a255f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils\lzma">
+      <UniqueIdentifier>{ae85c7e5-c778-4a6f-a819-1f8e269c24fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RtwModules">
+      <UniqueIdentifier>{61ae9eff-c5d1-4d7c-b295-8ab3f626f527}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CoreParser\CoreParser.cpp">
+      <Filter>CoreParser</Filter>
+    </ClCompile>
+    <ClCompile Include="CoreParser\CoreValue.cpp">
+      <Filter>CoreParser</Filter>
+    </ClCompile>
+    <ClCompile Include="RtwScript.cpp">
+      <Filter>RtwModules</Filter>
+    </ClCompile>
+    <ClCompile Include="LauncherCore.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="RomeLoader.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzFind.c">
+      <Filter>Utils\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzFindMt.c">
+      <Filter>Utils\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzmaDec.c">
+      <Filter>Utils\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzmaEnc.c">
+      <Filter>Utils\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzmaLib.c">
+      <Filter>Utils\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Threads.c">
+      <Filter>Utils\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Alloc.c">
+      <Filter>Utils\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="CoreSettings.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="RtwUnits.cpp">
+      <Filter>RtwModules</Filter>
+    </ClCompile>
+    <ClCompile Include="RtwModel.cpp">
+      <Filter>RtwModules</Filter>
+    </ClCompile>
+    <ClCompile Include="RtwFactions.cpp">
+      <Filter>RtwModules</Filter>
+    </ClCompile>
+    <ClCompile Include="RtwCulture.cpp">
+      <Filter>RtwModules</Filter>
+    </ClCompile>
+    <ClCompile Include="RtwDictionary.cpp">
+      <Filter>RtwModules</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CoreParser\CoreParser.h">
+      <Filter>CoreParser</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreParser\CoreValue.h">
+      <Filter>CoreParser</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreParser\CoreWriter.h">
+      <Filter>CoreParser</Filter>
+    </ClInclude>
+    <ClInclude Include="RtwScript.h">
+      <Filter>RtwModules</Filter>
+    </ClInclude>
+    <ClInclude Include="LauncherCore.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="RomeLoader.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Alloc.h">
+      <Filter>Utils\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzFind.h">
+      <Filter>Utils\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzFindMt.h">
+      <Filter>Utils\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzHash.h">
+      <Filter>Utils\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzmaDec.h">
+      <Filter>Utils\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzmaEnc.h">
+      <Filter>Utils\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzmaLib.h">
+      <Filter>Utils\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Threads.h">
+      <Filter>Utils\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Types.h">
+      <Filter>Utils\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="CoreSettings.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="RtwUnits.h">
+      <Filter>RtwModules</Filter>
+    </ClInclude>
+    <ClInclude Include="RtwModel.h">
+      <Filter>RtwModules</Filter>
+    </ClInclude>
+    <ClInclude Include="RtwFactions.h">
+      <Filter>RtwModules</Filter>
+    </ClInclude>
+    <ClInclude Include="RtwCulture.h">
+      <Filter>RtwModules</Filter>
+    </ClInclude>
+    <ClInclude Include="RtwDictionary.h">
+      <Filter>RtwModules</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

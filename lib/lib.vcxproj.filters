@@ -1,0 +1,197 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="enumerator.h" />
+    <ClInclude Include="log.h" />
+    <ClInclude Include="io\binary_reader.h">
+      <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\binary_writer.h">
+      <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\console.h">
+      <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="process_loader.h">
+      <Filter>process_hacking</Filter>
+    </ClInclude>
+    <ClInclude Include="remote_dll_injector.h">
+      <Filter>process_hacking</Filter>
+    </ClInclude>
+    <ClInclude Include="process_info.h">
+      <Filter>process_hacking</Filter>
+    </ClInclude>
+    <ClInclude Include="process_fork.h">
+      <Filter>process_hacking</Filter>
+    </ClInclude>
+    <ClInclude Include="memory_map.h">
+      <Filter>process_hacking</Filter>
+    </ClInclude>
+    <ClInclude Include="fnv.h" />
+    <ClInclude Include="shadowlib.h">
+      <Filter>process_hacking</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\binary_serializer.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\binary_stream.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\close_sync.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\collections.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\concurrent_queue.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\config.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\debugging.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\delegate.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\file_io.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\future.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\json.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\memory_pool.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\minmax.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\obfuscated_string.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\scope_guard.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\sockets.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\sprint.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\stack_trace.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\strview.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\tests.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\thread_pool.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\timer.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ReCpp\rpp\vec.h">
+      <Filter>rpp</Filter>
+    </ClInclude>
+    <ClInclude Include="utf8.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="log.cpp" />
+    <ClCompile Include="process_loader.cpp">
+      <Filter>process_hacking</Filter>
+    </ClCompile>
+    <ClCompile Include="remote_dll_injector.cpp">
+      <Filter>process_hacking</Filter>
+    </ClCompile>
+    <ClCompile Include="process_info.cpp">
+      <Filter>process_hacking</Filter>
+    </ClCompile>
+    <ClCompile Include="process_fork.cpp">
+      <Filter>process_hacking</Filter>
+    </ClCompile>
+    <ClCompile Include="memory_map.cpp">
+      <Filter>process_hacking</Filter>
+    </ClCompile>
+    <ClCompile Include="io\console.cpp">
+      <Filter>io</Filter>
+    </ClCompile>
+    <ClCompile Include="fnv.cpp" />
+    <ClCompile Include="shadowlib.cpp">
+      <Filter>process_hacking</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\binary_stream.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\debugging.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\file_io.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\json.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\sockets.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\sprint.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\stack_trace.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\strview.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\tests.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\thread_pool.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\timer.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="ReCpp\rpp\vec.cpp">
+      <Filter>rpp</Filter>
+    </ClCompile>
+    <ClCompile Include="utf8.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="io">
+      <UniqueIdentifier>{431a2636-27d0-4037-90c0-abfa94d543aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="process_hacking">
+      <UniqueIdentifier>{f9a123b5-c196-4496-8e23-b48289b89bf5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rpp">
+      <UniqueIdentifier>{b1531ff7-9536-4e36-bafd-7d9238749483}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="ReCpp\rpp\binary_reader.natvis">
+      <Filter>rpp</Filter>
+    </Natvis>
+    <Natvis Include="ReCpp\rpp\collections.natvis">
+      <Filter>rpp</Filter>
+    </Natvis>
+    <Natvis Include="ReCpp\rpp\strview.natvis">
+      <Filter>rpp</Filter>
+    </Natvis>
+    <Natvis Include="ReCpp\rpp\vec.natvis">
+      <Filter>rpp</Filter>
+    </Natvis>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReCpp\rpp\file_io.mm">
+      <Filter>rpp</Filter>
+    </None>
+  </ItemGroup>
+</Project>
