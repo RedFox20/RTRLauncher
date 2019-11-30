@@ -40,12 +40,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);ReCpp;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);ReCpp;fmt\include;$(IncludePath)</IncludePath>
     <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);ReCpp;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);ReCpp;fmt\include;$(IncludePath)</IncludePath>
     <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</OutDir>
   </PropertyGroup>
@@ -83,6 +83,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="enumerator.h" />
+    <ClInclude Include="fmt\include\fmt\chrono.h" />
+    <ClInclude Include="fmt\include\fmt\color.h" />
+    <ClInclude Include="fmt\include\fmt\compile.h" />
+    <ClInclude Include="fmt\include\fmt\core.h" />
+    <ClInclude Include="fmt\include\fmt\format-inl.h" />
+    <ClInclude Include="fmt\include\fmt\format.h" />
+    <ClInclude Include="fmt\include\fmt\locale.h" />
+    <ClInclude Include="fmt\include\fmt\ostream.h" />
+    <ClInclude Include="fmt\include\fmt\posix.h" />
+    <ClInclude Include="fmt\include\fmt\printf.h" />
+    <ClInclude Include="fmt\include\fmt\ranges.h" />
     <ClInclude Include="fnv.h" />
     <ClInclude Include="io\binary_reader.h" />
     <ClInclude Include="io\binary_writer.h" />
@@ -120,6 +131,8 @@
     <ClInclude Include="utf8.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="fmt\src\format.cc" />
+    <ClCompile Include="fmt\src\posix.cc" />
     <ClCompile Include="fnv.cpp" />
     <ClCompile Include="io\console.cpp" />
     <ClCompile Include="log.cpp" />

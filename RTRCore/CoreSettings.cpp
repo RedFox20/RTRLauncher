@@ -2,7 +2,10 @@
 #include <log.h>
 #include <rpp/file_io.h>
 #include <rpp/strview.h>
-using rpp::strview;
+
+namespace core
+{
+    using rpp::strview;
 
     static const char secLoad[] = "[+] CFGLoader [+]";
 
@@ -76,7 +79,7 @@ using rpp::strview;
     struct SettingsWriteMap
     {
         rpp::string_buffer out;
-        vector<strview> keys;
+        std::vector<strview> keys;
         SettingsWriteMap() : keys({ 
             "title", "strat_name", "mod_name", "bk_bitmap", "bk_script",
             "turns_py", "windowed", "show_err", "launch_strat", "attach_vsjit", 
@@ -149,3 +152,4 @@ using rpp::strview;
         if (map.out.size())
             rpp::file::write_new(UserConfig, map.out.view());
     }
+}

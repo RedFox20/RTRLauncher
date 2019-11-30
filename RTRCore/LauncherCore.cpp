@@ -1,14 +1,14 @@
 #include "LauncherCore.h"
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
 #include <log.h>
 #include "RtwScript.h"
 #include "RomeLoader.h"
 #include <fnv.h>
 #include <rpp/file_io.h>
+#include <fmt/format.h>
 
-
-    LauncherCore::LauncherCore() : mWorkerRunning(false)
+namespace core
+{
+    LauncherCore::LauncherCore()
     {
         logger_init("launcher.log"); // yeah we're gonna need this for debugz
         log(" === Welcome to Rome Launcher ===\n");
@@ -16,11 +16,9 @@
         // initialize main directories
         // LauncherDir = "C:/Games/RTRGame/RTR/"
         LauncherDir = rpp::working_dir();
-        rpp::normalize(LauncherDir, '/');
 
         // GameDir = "C:/Games/RTRGame/"
         GameDir = rpp::full_path(LauncherDir + "../");
-        rpp::normalize(GameDir, '/');
 
         DataDir = LauncherDir + "data/";
         CoreDir = LauncherDir + "core/";
@@ -30,6 +28,10 @@
 
         // we need to initialize launcher before we can do anything
         LoadSettings();
+
+        
+        Game = GetTargetGameInfo();
+        log("GameInfo: %s\n", Game.FullPath.c_str());
     }
 
 
@@ -37,15 +39,16 @@
     void LauncherCore::SaveSettings() { Settings.Save(); }
 
 
-    concurrency::task<void> LauncherCore::StartAsync()
+    rpp::cfuture<void> LauncherCore::StartAsync()
     {
-        if (mWorkerRunning) // don't allow restarting while we're busy
-            return concurrency::task<void>();
+        if (WorkerRunning) // don't allow restarting while we're busy
+            return {};
 
-        mWorkerRunning = true;
-        return concurrency::create_task([this](){
+        WorkerRunning = true;
+        return rpp::async_task([this]
+        {
             Start();
-            mWorkerRunning = false;
+            WorkerRunning = false;
         });
     }
 
@@ -70,20 +73,25 @@
     }
 
 
-
-
-    GameVersion LauncherCore::GetGamePath(string& romeTW) const
+    GameInfo::GameInfo(GameVersion ver, const string& gameDir, const string& exeName)
+        : Ver{ver}, FullPath{gameDir+exeName}, ExeName{exeName}
     {
-        if (rpp::file_exists(romeTW.assign(GameDir).append("RomeTW-ALX.exe")))
-            return RomeALX;
-        if (rpp::file_exists(romeTW.assign(GameDir).append("RomeTW-BI.exe")))
-            return RomeBI;
-        if (rpp::file_exists(romeTW.assign(GameDir).append("RomeTW.exe")))
-            return RomeTW;
-        romeTW.clear();
-        return GameVersion::GameNotFound;
     }
 
+
+    GameInfo LauncherCore::GetTargetGameInfo() const
+    {
+        for (GameInfo info : std::initializer_list<GameInfo>{
+            { GameVersion::RomeALX, GameDir, "RomeTW-ALX.exe" },
+            { GameVersion::RomeBI,  GameDir, "RomeTW-BI.exe"  },
+            { GameVersion::RomeTW,  GameDir, "RomeTW.exe"     }, })
+        {
+            if (rpp::file_exists(info.FullPath))
+                return info;
+        }
+
+        throw std::runtime_error{"Failed to find RomeTW-ALX.exe, RomeTW-BI.exe or RomeTW.exe in: "+GameDir};
+    }
 
 
     static const char* secOK = "[+] LaunchRTR [+]";
@@ -94,81 +102,38 @@
     // LaunchRTR function, which actually validates rome version etc
     bool LauncherCore::LaunchGame()
     {
-        log("\n");
-        logsec(secOK, "Initializing...\n");
-        GameVer = GetGamePath(Executable);
-        
-        // switches:
-        // -nm	No Movies
-        // -ne	Windowed mode
-        CmdLine = "-nm -enable_editor";
-        if (Settings.ShowErr)		CmdLine += " -show_err";
-        if (Settings.Windowed)		CmdLine += " -ne";
-        if (Settings.LaunchStrat)	CmdLine += " -strat:", CmdLine += Settings.StratName;
-        if (Settings.UseCaLog)		CmdLine += " -ca_log:ca_log.log -ca_fileopen_log:ca_fopen.log";
-
-        //CmdLine += " -enable_texel_realignment"; // what does this one do? investigate.
-        //CmdLine += " -force_ip:192.168.0.1:2900"; // investigate this further
-        //CmdLine += " -quick_battle:rome_flat2_01"; // jumps into quickbattle grassy flatlands
-        
-        if (Settings.CheckBuildings) CmdLine += " -check_script_buildings";
-        if (Settings.CheckImages)	 CmdLine += " -report_missing_images";
-        if (Settings.ValidateModels) //CmdLine += " -util:validate_models,unit_models,encrypt,animdb,sound";
+        try
         {
-            CmdLine += " -util:";
-            // validate_models checks battle + strat models, unit_models checks only battle models
-            // animdb generates Anims database
-            // sound generates sounds/events.dat|.idx
-            if (Settings.ValidateModels) CmdLine += "validate_models"; 
-        }
+            log("\n");
+            logsec(secOK, "Initializing...\n");
 
-        //CmdLine += " -battle_ed:imperial_campaign";
-        //CmdLine += " -cbf";
-        if (!Settings.ModName.empty()) // only if we have a modname
-            CmdLine += " -mod:" + Settings.ModName;
-        CmdLine += " -noalexander";
-        logsec(secOK, "Args:%s\n", CmdLine.c_str());
-
-        
-        char errmsg[512];
-        if (LaunchGame(errmsg))
+            Game = GetTargetGameInfo();
+            string commandLine = GetRTWCommandLine();
+            LaunchGame(commandLine);
             return true; // success
-
-        char fmt[512];
-        sprintf(fmt, "Failed to launch %s\n%s\n", Executable.c_str(), errmsg);
-        logsec(secFF, fmt);
-        MessageBoxA(0, fmt, "Launch Failed!", MB_OK);
-        return false;
+        }
+        catch (const std::exception& e)
+        {
+            string err = fmt::format("Failed to launch {}\n{}\n", Game.FullPath, e.what());
+            logsec(secFF, err);
+            show_message_box(err, "Launch Failed!");
+            return false;
+        }
     }
 
 
-
-
-
     // validates rome versions, tries to patch the image, triggers CreateProcess
-    bool LauncherCore::LaunchGame(char (&errmsg)[512])
+    void LauncherCore::LaunchGame(const string& commandLine)
     {
         logsec(secOK, "Validating RomeTW Path\n");
-        if (GameVer == GameVersion::GameNotFound) {
-            strcpy(errmsg, "Failed to find RomeTW-ALX.exe, RomeTW-BI.exe or RomeTW.exe");
-            return false;
-        }
-        logsec(secOK, "Found %s\n", Executable.c_str());
+        logsec(secOK, "Found %s\n", Game.ExeName.c_str());
         logsec(secOK, "Validating Rome version\n");
 
         // initialize imageFile, need to patch BI before we can use it:
-        if (!CheckGameVersion(Executable)) {
-            sprintf(errmsg, "Unsupported version of %s", Executable.c_str());
-            return false;
+        if (!CheckGameVersion(Game.FullPath)) {
+            throw std::runtime_error{"Unsupported version of " + Game.ExeName};
         }
-        logsec(secOK, "Loading Process: %s\n", Executable.c_str(), CmdLine.c_str());	
-
-        if (GameVer != GameVersion::RomeALX)
-        {
-            char name[MAX_PATH];
-            GetModuleFileNameA(NULL, name, MAX_PATH); // use RTRLauncher.exe instead
-            Executable = name; // -- debug stuff -- 
-        }
+        logsec(secOK, "Loading Process: %s\n", Game.FullPath.c_str(), commandLine.c_str());	
 
         //HMODULE ntdll = LoadLibraryA("ntdll");
         //vector<PCCH> procs;
@@ -186,21 +151,44 @@
         //for (auto& path : modules)
         //	log("loaded: %s\n", path.c_str());
 
-        //Executable = GameDir + "RomeTW-BI.exe";
-        //Executable = GameDir + "RomeTW.exe"; // -- debug stuff --
-        string cmd = Executable + " " + CmdLine;
-        if (RomeLoader::Start(errmsg, cmd, GameDir, Settings))
-            return true; // success
-
-        // CreateProcess or InjectAttach failed:
-        int error = GetLastError();
-        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, 0, error, 0, errmsg, sizeof(errmsg), 0);
-        return false;
+        string cmd = Game.FullPath + " " + commandLine;
+        RomeLoader::Start(cmd, GameDir, Settings);
     }
 
+    string LauncherCore::GetRTWCommandLine() const
+    {
+        // switches:
+        // -nm	No Movies
+        // -ne	Windowed mode
+        string cmd = "-nm -enable_editor";
+        if (Settings.ShowErr)     cmd += " -show_err";
+        if (Settings.Windowed)    cmd += " -ne";
+        if (Settings.LaunchStrat) cmd += " -strat:"+Settings.StratName;
+        if (Settings.UseCaLog)    cmd += " -ca_log:ca_log.log -ca_fileopen_log:ca_fopen.log";
 
+        //CmdLine += " -enable_texel_realignment"; // what does this one do? investigate.
+        //CmdLine += " -force_ip:192.168.0.1:2900"; // investigate this further
+        //CmdLine += " -quick_battle:rome_flat2_01"; // jumps into quickbattle grassy flatlands
+        
+        if (Settings.CheckBuildings) cmd += " -check_script_buildings";
+        if (Settings.CheckImages)    cmd += " -report_missing_images";
+        if (Settings.ValidateModels) //CmdLine += " -util:validate_models,unit_models,encrypt,animdb,sound";
+        {
+            cmd += " -util:";
+            // validate_models checks battle + strat models, unit_models checks only battle models
+            // animdb generates Anims database
+            // sound generates sounds/events.dat|.idx
+            if (Settings.ValidateModels) cmd += "validate_models"; 
+        }
 
-
+        //CmdLine += " -battle_ed:imperial_campaign";
+        //CmdLine += " -cbf";
+        if (!Settings.ModName.empty()) // only if we have a modname
+            cmd += " -mod:" + Settings.ModName;
+        cmd += " -noalexander";
+        logsec(secOK, "Args:%s\n", cmd.c_str());
+        return cmd;
+    }
 
 
     bool LauncherCore::CheckGameVersion(const string& romeTW) const
@@ -211,8 +199,6 @@
         //// @note Steam update unencrypted all the exes
         return true;
     }
-
-
 
 
     void LauncherCore::ValidateMapRWM() const
@@ -268,3 +254,4 @@
             rpp::file::write_new(checksum_file, &hash, sizeof(hash)); // save checksum
         }
     }
+}

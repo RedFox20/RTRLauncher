@@ -1,2 +1,2 @@
-mklink /J "RTR" "M:\Games\steamapps\common\Rome Total War Alexander\RTR"
+mklink /J "ALX" "M:\Games\steamapps\common\Rome Total War Alexander\"
 pause

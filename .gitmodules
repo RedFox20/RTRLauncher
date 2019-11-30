@@ -1,3 +1,6 @@
 [submodule "ReCpp"]
 	path = lib/ReCpp
 	url = https://github.com/RedFox20/ReCpp.git
+[submodule "lib/fmt"]
+	path = lib/fmt
+	url = https://github.com/fmtlib/fmt.git

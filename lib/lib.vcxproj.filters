@@ -101,6 +101,39 @@
       <Filter>rpp</Filter>
     </ClInclude>
     <ClInclude Include="utf8.h" />
+    <ClInclude Include="fmt\include\fmt\chrono.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\color.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\compile.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\core.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\format.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\format-inl.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\locale.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\ostream.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\posix.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\printf.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\ranges.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="log.cpp" />
@@ -163,6 +196,12 @@
       <Filter>rpp</Filter>
     </ClCompile>
     <ClCompile Include="utf8.cpp" />
+    <ClCompile Include="fmt\src\format.cc">
+      <Filter>fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="fmt\src\posix.cc">
+      <Filter>fmt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="io">
@@ -173,6 +212,9 @@
     </Filter>
     <Filter Include="rpp">
       <UniqueIdentifier>{b1531ff7-9536-4e36-bafd-7d9238749483}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="fmt">
+      <UniqueIdentifier>{fe48be43-ba2d-43e2-8fe8-485be9a7caed}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

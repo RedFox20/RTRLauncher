@@ -1,15 +1,12 @@
 #pragma once
 #include "CoreSettings.h"
 
-
-struct RomeLoader
+namespace core
 {
-
-
-
-	static bool Start(char (&errmsg)[512], 
-					  const string& cmd, 
-					  const string& workingDir,
-					  const CoreSettings& settings);
-
-};
+    struct RomeLoader
+    {
+        static void Start(const string& cmd, 
+                          const string& workingDir,
+                          const CoreSettings& settings);
+    };
+}
