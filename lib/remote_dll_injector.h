@@ -30,7 +30,7 @@ struct remote_dll_injector
      * Copyright notes: Original code written by zwclose7
      * @param targetProcessHANDLE - Process HANDLE to inject the dll into
      */
-    inject_result inject_dllimage(void* targetProcessHANDLE);
+    inject_result inject_dllimage(void* targetProcessHANDLE) const;
 
     /**
      * Inject to the specified process
@@ -41,10 +41,10 @@ struct remote_dll_injector
     static bool inject_dllfile(void* targetProcessHANDLE, const char* filename);
 
     /**
-     * Enables DEBUG priviledges - sometimes required
+     * Enables DEBUG privileges - sometimes required
      * to open remote processes with higher access rights
      */
-    static void enable_debug_priviledge();
+    static void enable_debug_privilege();
 
     /**
      * Reserve some memory after target process's ImageBase

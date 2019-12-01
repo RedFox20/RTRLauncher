@@ -10,10 +10,7 @@
 #pragma comment(lib, "Psapi.lib")
 // ReSharper disable StringLiteralTypo
 // ReSharper disable IdentifierTypo
-
-#ifndef NOINLINE
-#define NOINLINE __declspec(noinline)
-#endif
+// ReSharper disable CppUnreachableCode
 
 #define SHADOWLIB_FORCE_DEBUG 1
 #if _DEBUG || DEBUG || SHADOWLIB_FORCE_DEBUG
@@ -22,7 +19,7 @@
 #  define indebug(...)
 #endif
 
-constexpr bool USER_LAND_FUNCTIONS = false;
+constexpr bool USER_LAND_FUNCTIONS = true;
 
 typedef long (WINAPI*fnNtQueryVirtualMemory)   (void*, void*, DWORD, void*, ULONG, ULONG*);
 typedef long (WINAPI*fnNtAllocateVirtualMemory)(HANDLE, PVOID*, ULONG_PTR, PSIZE_T, ULONG, ULONG);
@@ -62,8 +59,9 @@ static const char* memory_constant(DWORD value)
         case MEM_PRIVATE:            return "PRIV";
         case MEM_MAPPED:             return "MAPD";
         case MEM_IMAGE:              return "IMAG";
+        default:                     return "INV@";
     }
-    return "INV@";
+    
 }
 void NOINLINE shadow_vprint(MEMORY_BASIC_INFORMATION& i)
 {
@@ -88,7 +86,6 @@ void shadow_vprint(void* baseAddress, DWORD regionSize)
 }
 
 
-
 constexpr uint32_t FUNCTION_MASK = 0xCAFEBABE;
 
 #define NT_LOAD_FUNCTION(FuncName, failedResult) \
@@ -104,32 +101,33 @@ constexpr uint32_t FUNCTION_MASK = 0xCAFEBABE;
 #define UNMASK_FUNCTION(FuncName) (p##FuncName)
 
 
-#define DebugUserLandResult(result, function) \
-    indebug(if (!(result)) { \
-        log(function" failed: %p\nReason: %s\n", result, shadow_getsyserr()); \
+#define DebugUserLandResult(result, function, ...) \
+    if (!(result)) { \
+        log(function" failed: %s\n", ##__VA_ARGS__, shadow_getsyserr()); \
         __debugbreak(); \
-    })
+    }
 
 
-#define DebugNtResult(result, function) \
-    indebug(if (result) { \
-        log(function" failed: %p\nReason: %s\n", result, shadow_getsyserr()); \
-    })
+#define DebugNtResult(result, function, ...) \
+    if ((result) != 0) { \
+        log(function" failed: %s\n", ##__VA_ARGS__, shadow_getsyserr(result)); \
+        __debugbreak(); \
+    }
 
 
 bool NOINLINE shadow_vquery(HANDLE process, void* address, MEMORY_BASIC_INFORMATION& info)
 {
     if (USER_LAND_FUNCTIONS)
     {
-        BOOL result = VirtualQueryEx(process, address, &info, sizeof info) > 0;
-        DebugUserLandResult(result, "VirtualQueryEx");
+        BOOL result = VirtualQueryEx(process, address, &info, sizeof(info)) > 0;
+        DebugUserLandResult(result, "VirtualQueryEx(%p, %p)", process, address);
         return result;
     }
     else
     {
         NT_LOAD_FUNCTION(NtQueryVirtualMemory, false);
-        long result = UNMASK_FUNCTION(NtQueryVirtualMemory)(process, address, 0, &info, sizeof info, nullptr);
-        DebugNtResult(result, "NtQueryVirtualMemory");
+        long result = UNMASK_FUNCTION(NtQueryVirtualMemory)(process, address, 0, &info, sizeof(info), nullptr);
+        DebugNtResult(result, "NtQueryVirtualMemory(%p, %p)", process, address);
         return result == 0;
     }
 }
@@ -138,15 +136,15 @@ bool shadow_vquery(void* address, MEMORY_BASIC_INFORMATION& info)
     return shadow_vquery(HANDLE(-1), address, info);
 }
 
-PVOID NOINLINE shadow_valloc(HANDLE process, void* address, DWORD size, DWORD protect, DWORD flags)
+PCHAR NOINLINE shadow_valloc(HANDLE process, void* address, DWORD size, DWORD protect, DWORD flags)
 {
     if (USER_LAND_FUNCTIONS)
     {
         log("valloc %p %p %d %x %x => ", process, address, size, protect, flags);
         PVOID result = VirtualAllocEx(process, address, size, flags, protect);
-        DebugUserLandResult(result, "VirtualAllocEx");
+        DebugUserLandResult(result, "VirtualAllocEx(%p, %p, %d)", process, address, size);
         shadow_vprint(process, result, 1);
-        return result;
+        return PCHAR(result);
     }
     else
     {
@@ -158,11 +156,11 @@ PVOID NOINLINE shadow_valloc(HANDLE process, void* address, DWORD size, DWORD pr
         void* addressBase = address;
         SIZE_T regionSize = size;
         long result = UNMASK_FUNCTION(NtAllocateVirtualMemory)(process, &addressBase, 0, &regionSize, filtered, protect);
-        DebugNtResult(result, "NtAllocateVirtualMemory");
-        return result == 0 ? addressBase : nullptr;
+        DebugNtResult(result, "NtAllocateVirtualMemory(%p, %p, %d)", process, address, size);
+        return result == 0 ? PCHAR(addressBase) : nullptr;
     }
 }
-void* shadow_valloc(void* address, DWORD size, DWORD protect, DWORD flags)
+PCHAR shadow_valloc(void* address, DWORD size, DWORD protect, DWORD flags)
 {
     return shadow_valloc(HANDLE(-1), address, size, protect, flags);
 }
@@ -172,17 +170,18 @@ void* shadow_valloc(void* address, DWORD size, DWORD protect, DWORD flags)
 
 bool NOINLINE shadow_vread(HANDLE process, void* address, void* buffer, DWORD size)
 {
+    SIZE_T read;
     if (USER_LAND_FUNCTIONS)
     {
-        BOOL result = ReadProcessMemory(process, address, buffer, size, nullptr);
-        DebugUserLandResult(result, "ReadProcessMemory");
+        BOOL result = ReadProcessMemory(process, address, buffer, size, &read);
+        DebugUserLandResult(result, "ReadProcessMemory(%p, %p, %d) read: %d", process, address, size, read);
         return result;
     }
     else
     {
         NT_LOAD_FUNCTION(NtReadVirtualMemory, false);
-        long result = UNMASK_FUNCTION(NtReadVirtualMemory)(process, address, buffer, size, nullptr);
-        DebugNtResult(result, "NtReadVirtualMemory");
+        long result = UNMASK_FUNCTION(NtReadVirtualMemory)(process, address, buffer, size, &read);
+        DebugNtResult(result, "NtReadVirtualMemory(%p, %p, %d) read: %d", process, address, size, read);
         return result == 0;
     }
 }
@@ -193,17 +192,19 @@ bool shadow_vread(void* address, void* buffer, DWORD size)
 
 bool NOINLINE shadow_vwrite(HANDLE process, void* address, void* buffer, DWORD size)
 {
+    DWORD written;
     if (USER_LAND_FUNCTIONS)
     {
-        BOOL result = WriteProcessMemory(process, address, buffer, size, nullptr);
-        DebugUserLandResult(result, "WriteProcessMemory");
+        BOOL result = WriteProcessMemory(process, address, buffer, size, &written);
+        DebugUserLandResult(result && size == written,
+            "WriteProcessMemory(%p, %p, %d) written: %d", process, address, size, written);
         return result;
     }
     else
     {
         NT_LOAD_FUNCTION(NtWriteVirtualMemory, false);
-        long result = UNMASK_FUNCTION(NtWriteVirtualMemory)(process, address, buffer, size, nullptr);
-        DebugNtResult(result, "NtWriteVirtualMemory");
+        long result = UNMASK_FUNCTION(NtWriteVirtualMemory)(process, address, buffer, size, &written);
+        DebugNtResult(result, "NtWriteVirtualMemory(%p, %p, %d) written: %d", process, address, size, written);
         return result == 0;
     }
 }
@@ -220,7 +221,7 @@ bool NOINLINE shadow_vfree(HANDLE process, void* address)
     if (USER_LAND_FUNCTIONS)
     {
         BOOL result = VirtualFreeEx(process, address, 0, MEM_RELEASE);
-        DebugUserLandResult(result, "VirtualFreeEx");
+        DebugUserLandResult(result, "VirtualFreeEx(%p, %p)", process, address);
         return result;
     }
     else
@@ -229,7 +230,7 @@ bool NOINLINE shadow_vfree(HANDLE process, void* address)
         ULONG regionSize = 0;
         void* regionBase = address;
         long result = UNMASK_FUNCTION(NtFreeVirtualMemory)(process, &regionBase, &regionSize, MEM_RELEASE);
-        DebugNtResult(result, "NtFreeVirtualMemory");
+        DebugNtResult(result, "NtFreeVirtualMemory(%p, %p)", process, address);
         return result == 0;
     }
 }
@@ -243,14 +244,14 @@ bool NOINLINE shadow_vunmap(HANDLE process, void* address)
     //if (USER_LAND_FUNCTIONS)
     //{
     //    BOOL result = UnmapViewOfFile2(process, address, 0);
-    //    DebugUserLandResult(result, "UnmapViewOfFile2");
+    //    DebugUserLandResult(result, "UnmapViewOfFile2(%p, %p)", process, address);
     //    return result;
     //}
     //else
     {
         NT_LOAD_FUNCTION(NtUnmapViewOfSection, false);
         long result = UNMASK_FUNCTION(NtUnmapViewOfSection)(process, address);
-        DebugNtResult(result, "NtUnmapViewOfSection");
+        DebugNtResult(result, "NtUnmapViewOfSection(%p, %p)", process, address);
         return result == 0;
     }
 }
@@ -282,14 +283,14 @@ bool shadow_unmap(void* address)
 bool NOINLINE shadow_unmap(HANDLE process, void* baseAddress, DWORD regionSize)
 {
     MEMORY_BASIC_INFORMATION info;
-    PCHAR nextBlock  = PCHAR(baseAddress);
-    PCHAR endAddress = nextBlock + regionSize;
+    auto nextBlock  = PCHAR(baseAddress);
+    auto endAddress = nextBlock + regionSize;
     while (nextBlock < endAddress)
     {
         if (!shadow_unmap(process, nextBlock))
             return false;
         shadow_vquery(process, nextBlock, info);
-        nextBlock = (PCHAR)info.BaseAddress + info.RegionSize;
+        nextBlock = PCHAR(info.BaseAddress) + info.RegionSize;
     }
     return true;
 }
@@ -299,38 +300,67 @@ bool shadow_unmap(void* baseAddress, DWORD regionSize)
 }
 
 
-
-
-FARPROC NOINLINE shadow_getproc(void* hmodule, LPCSTR name)
+PIMAGE_NT_HEADERS NOINLINE get_nt_headers(HMODULE module)
 {
-    auto code = (PCHAR)hmodule;
-    auto dos_header = (PIMAGE_DOS_HEADER)code;
+    auto code = reinterpret_cast<PCHAR>(module);
+    auto dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(code);
     if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
         SetLastError(ERROR_BAD_EXE_FORMAT);
         return nullptr;
     }
-    auto headers = (PIMAGE_NT_HEADERS)&code[dos_header->e_lfanew];
+    auto headers = reinterpret_cast<PIMAGE_NT_HEADERS>(&code[dos_header->e_lfanew]);
     if (headers->Signature != IMAGE_NT_SIGNATURE) {
         SetLastError(ERROR_BAD_EXE_FORMAT);
         return nullptr;
     }
-    PIMAGE_DATA_DIRECTORY directory = &headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+    return headers;
+}
+
+bool is_valid_nt_module(HMODULE module)
+{
+    return get_nt_headers(module) != nullptr;
+}
+
+PIMAGE_DATA_DIRECTORY NOINLINE get_image_data_directory(HMODULE module, int image_directory_entry_id)
+{
+    auto headers = get_nt_headers(module);
+    if (!headers) return nullptr;
+
+    PIMAGE_DATA_DIRECTORY directory = &headers->OptionalHeader.DataDirectory[image_directory_entry_id];
     if (directory->Size == 0) {
-        SetLastError(ERROR_PROC_NOT_FOUND); // no export table found
+        SetLastError(ERROR_BAD_EXE_FORMAT); // no export table found
         return nullptr;
     }
-    auto exports = (PIMAGE_EXPORT_DIRECTORY)(code + directory->VirtualAddress);
-    if (!exports->NumberOfNames|| !exports->NumberOfFunctions) {
+    return directory;
+}
+
+PIMAGE_EXPORT_DIRECTORY NOINLINE get_module_exports(HMODULE module)
+{
+    PIMAGE_DATA_DIRECTORY dir = get_image_data_directory(module, IMAGE_DIRECTORY_ENTRY_EXPORT);
+    if (!dir) return nullptr;
+
+    auto code = reinterpret_cast<PCHAR>(module);
+    auto exports = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(code + dir->VirtualAddress);
+    if (!exports->NumberOfNames || !exports->NumberOfFunctions) {
         SetLastError(ERROR_PROC_NOT_FOUND); // DLL doesn't export anything
         return nullptr;
     }
+    return exports;
+}
+
+FARPROC NOINLINE shadow_getproc(HMODULE module, LPCSTR name)
+{
+    PIMAGE_EXPORT_DIRECTORY exports = get_module_exports(module);
+    if (!exports) return nullptr;
 
     // search function name in list of exported names
     int idx = -1;
+    auto code = reinterpret_cast<PCHAR>(module);
     auto nameRef = PDWORD(code + exports->AddressOfNames);
     auto ordinal = PWORD (code + exports->AddressOfNameOrdinals);
     for (UINT i = 0; i < exports->NumberOfNames; ++i, ++nameRef, ++ordinal) {
-        if (_stricmp(name, code + *nameRef) == 0) {
+        const char* funcName = code + *nameRef;
+        if (_stricmp(name, funcName) == 0) {
             idx = *ordinal;
             break;
         }
@@ -348,8 +378,38 @@ FARPROC NOINLINE shadow_getproc(void* hmodule, LPCSTR name)
     }
 
     // AddressOfFunctions contains the RVAs to the "real" functions
-    return FARPROC(code + *PDWORD(code + exports->AddressOfFunctions + idx*4));
+    auto rva = PDWORD(code + exports->AddressOfFunctions + idx*sizeof(DWORD));
+    auto proc = FARPROC(code + *rva);
+    return proc;
 }
+
+
+ModuleProcCache::ModuleProcCache(HMODULE module)
+{
+    PIMAGE_EXPORT_DIRECTORY exports = get_module_exports(module);
+    if (!exports) return;
+
+    auto code = reinterpret_cast<PCHAR>(module);
+    auto nameRef = PDWORD(code + exports->AddressOfNames);
+    auto ordinal = PWORD (code + exports->AddressOfNameOrdinals);
+    for (UINT i = 0; i < exports->NumberOfNames; ++i, ++nameRef, ++ordinal)
+    {
+        rpp::strview funcName = code + *nameRef;
+        auto rva = PDWORD(code + exports->AddressOfFunctions + (*ordinal)*sizeof(DWORD));
+        auto proc = FARPROC(code + *rva);
+        procs[funcName] = proc;
+    }
+}
+
+FARPROC ModuleProcCache::find(rpp::strview name) const
+{
+    auto it = procs.find(name);
+    if (it != procs.end())
+        return it->second;
+    SetLastError(ERROR_PROC_NOT_FOUND); // function not found
+    return nullptr;
+}
+
 
 static HMODULE NOINLINE shadow_findmodule(const char* startsWith)
 {
@@ -364,79 +424,45 @@ static HMODULE NOINLINE shadow_findmodule(const char* startsWith)
         for (int i = 0; i < count; ++i)
         {
             if (GetModuleBaseNameA(process, mods[i], modName, MAX_PATH))
-                if (memicmp(modName, startsWith, slen) == 0)
+                if (_memicmp(modName, startsWith, slen) == 0)
                     return mods[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
-FARPROC NOINLINE shadow_ntdll_getproc(const char* func)
+FARPROC NOINLINE shadow_ntdll_getproc(rpp::strview func)
 {
-    //// @note We don't want anyone to see us LoadLibrary-ing "ntdll"
-    static HMODULE module;
-    if (!module)
-    {
-        HMODULE mods[4];
-        DWORD cbSize;
-        EnumProcessModules(GetCurrentProcess(), mods, sizeof mods, &cbSize);
-        module = mods[1]; // NTDLL.DLL always the second element
-    }
-    return shadow_getproc(module, func);
+    static ModuleProcCache module { shadow_findmodule("NTDLL") };
+    return module.find(func);
 }
-FARPROC NOINLINE shadow_kernel_getproc(const char* func)
+FARPROC NOINLINE shadow_kernel_getproc(rpp::strview func)
 {
-    //// @note We don't want anyone to see us LoadLibrary-ing "kernel32"
-    static HMODULE module;
-    if (!module)
-    {
-        HMODULE mods[4];
-        DWORD cbSize;
-        EnumProcessModules(GetCurrentProcess(), mods, sizeof mods, &cbSize);
-        module = mods[2]; // KERNEL32.DLL always the third element
-    }
-    return shadow_getproc(module, func);
+    static ModuleProcCache module { shadow_findmodule("KernelBase") };
+    return module.find(func);
 }
 
 
 
 
-bool NOINLINE shadow_listprocs(std::vector<const char*>& out, void* hmodule, const char* istartsWith)
+std::vector<rpp::strview> NOINLINE shadow_listprocs(HMODULE module, const char* istartsWith)
 {
-    auto code = (PCHAR)hmodule;
-    auto dos_header = (PIMAGE_DOS_HEADER)code;
-    if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
-        SetLastError(ERROR_BAD_EXE_FORMAT);
-        return false;
-    }
-    auto headers = (PIMAGE_NT_HEADERS)&code[dos_header->e_lfanew];
-    if (headers->Signature != IMAGE_NT_SIGNATURE) {
-        SetLastError(ERROR_BAD_EXE_FORMAT);
-        return false;
-    }
-    PIMAGE_DATA_DIRECTORY dir = &headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-    if (dir->Size == 0) {
-        SetLastError(ERROR_PROC_NOT_FOUND); // no export table found
-        return false;
-    }
-    auto exports = (PIMAGE_EXPORT_DIRECTORY)(code + dir->VirtualAddress);
-    if (!exports->NumberOfNames || !exports->NumberOfFunctions) {
-        SetLastError(ERROR_PROC_NOT_FOUND); // DLL doesn't export anything
-        return false; 
-    }
+    std::vector<rpp::strview> out;
+    PIMAGE_EXPORT_DIRECTORY exports = get_module_exports(module);
+    if (!exports) return out;
 
-    out.clear();
+    auto code = reinterpret_cast<PCHAR>(module);
     out.reserve(exports->NumberOfNames);
 
     // search function name in list of exported names
-    int swlength = istartsWith ? strlen(istartsWith) : 0;
+    size_t swlength = istartsWith ? strlen(istartsWith) : 0;
     auto nameRef = PDWORD(code + exports->AddressOfNames);
     for (UINT i = 0; i < exports->NumberOfNames; ++i, ++nameRef) {
         PCHAR target = code + *nameRef;
         if (!swlength || _memicmp(target, istartsWith, swlength) == 0)
-            out.push_back(target);
+            out.emplace_back(target);
     }
-    return true;
+    return out;
 }
 
 
@@ -447,9 +473,9 @@ HANDLE NOINLINE shadow_create_thread(HANDLE process, LPTHREAD_START_ROUTINE star
     if (true || USER_LAND_FUNCTIONS)
     {
         DWORD tid;
-        HANDLE thread = CreateRemoteThread(process, nullptr, 256 * 1024, start, param, 
+        HANDLE thread = CreateRemoteThread(process, nullptr, 1024 * 1024, start, param, 
                                            suspended ? CREATE_SUSPENDED : 0, &tid);
-        DebugUserLandResult(thread, "CreateRemoteThread");
+        DebugUserLandResult(thread, "CreateRemoteThread(%p)", process);
         return thread;
     }
     else
@@ -469,7 +495,7 @@ HANDLE NOINLINE shadow_create_thread(HANDLE process, LPTHREAD_START_ROUTINE star
         HANDLE thread = nullptr;
         long result = UNMASK_FUNCTION(NtCreateThreadEx)(&thread, 0x1FFFFF, nullptr, process, start, param,
                                       suspended, 0, 0, 0, &nb);
-        DebugNtResult(result, "NtCreateThreadEx");
+        DebugNtResult(result, "NtCreateThreadEx(%p)", process);
         return thread;
     }
 }
@@ -486,7 +512,7 @@ HANDLE NOINLINE shadow_open_thread(DWORD threadId, DWORD flags)
     if (USER_LAND_FUNCTIONS)
     {
         HANDLE thread = OpenThread(flags, false, threadId);
-        DebugUserLandResult(thread, "OpenThread");
+        DebugUserLandResult(thread, "OpenThread(%d)", threadId);
         return thread;
     }
     else
@@ -496,22 +522,22 @@ HANDLE NOINLINE shadow_open_thread(DWORD threadId, DWORD flags)
         DWORD ids[2] = { 0, threadId };
         HANDLE h = nullptr;
         long result = UNMASK_FUNCTION(NtOpenThread)(&h, flags, &attr, &ids);
-        DebugNtResult(result, "NtOpenThread");
+        DebugNtResult(result, "NtOpenThread(%d)", threadId);
         return result == 0 ? h : nullptr;
     }
 }
-void NOINLINE shadow_close_handle(HANDLE thread)
+void NOINLINE shadow_close_handle(HANDLE handle)
 {
     if (USER_LAND_FUNCTIONS)
     {
-        BOOL result = CloseHandle(thread);
-        DebugUserLandResult(result, "CloseHandle");
+        BOOL result = CloseHandle(handle);
+        DebugUserLandResult(result, "CloseHandle(%p)", handle);
     }
     else
     {
         NT_LOAD_FUNCTION(NtClose, );
-        long result = UNMASK_FUNCTION(NtClose)(thread);
-        DebugNtResult(result, "NtClose");
+        long result = UNMASK_FUNCTION(NtClose)(handle);
+        DebugNtResult(result, "NtClose(%p)", handle);
     }
 }
 
@@ -539,8 +565,8 @@ std::vector<ProcessInfo> shadow_get_processes(rpp::strview name)
 
 std::vector<DWORD> NOINLINE shadow_get_threads(DWORD processId)
 {
-    const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, processId);
-    THREADENTRY32 entry = { sizeof entry };
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, processId);
+    THREADENTRY32 entry = { sizeof(entry), 0 };
     std::vector<DWORD> out;
     if (Thread32First(snapshot, &entry)) do
     {
@@ -558,13 +584,13 @@ std::vector<DWORD> shadow_get_threads()
 
 int NOINLINE shadow_get_threadcount(DWORD processId)
 {
-    const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    PROCESSENTRY32 entry = { sizeof entry };
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    PROCESSENTRY32 entry = { sizeof(entry), 0 };
     BOOL ret = Process32First(snapshot, &entry);
     while (ret && entry.th32ProcessID != processId)
         ret = Process32Next(snapshot, &entry);
     CloseHandle(snapshot);
-    return ret ? (int)entry.cntThreads : 0;
+    return ret ? int(entry.cntThreads) : 0;
 }
 int shadow_get_threadcount()
 {
@@ -593,7 +619,7 @@ bool NOINLINE shadow_get_threadctx(HANDLE thread, CONTEXT& ctx, DWORD getFlags)
     {
         ctx.ContextFlags = getFlags;
         BOOL result = GetThreadContext(thread, &ctx);
-        DebugUserLandResult(result, "GetThreadContext");
+        DebugUserLandResult(result, "GetThreadContext(%p)", thread);
         return result;
     }
     else
@@ -601,7 +627,7 @@ bool NOINLINE shadow_get_threadctx(HANDLE thread, CONTEXT& ctx, DWORD getFlags)
         NT_LOAD_FUNCTION(NtGetContextThread, false);
         ctx.ContextFlags = getFlags;
         long result = UNMASK_FUNCTION(NtGetContextThread)(thread, &ctx);
-        DebugNtResult(result, "NtGetContextThread");
+        DebugNtResult(result, "NtGetContextThread(%p)", thread);
         return result == 0;
     }
 }
@@ -611,7 +637,7 @@ bool NOINLINE shadow_set_threadctx(HANDLE thread, CONTEXT& ctx, DWORD setFlags)
     {
         ctx.ContextFlags = setFlags;
         BOOL result = SetThreadContext(thread, &ctx);
-        DebugUserLandResult(result, "SetThreadContext");
+        DebugUserLandResult(result, "SetThreadContext(%p)", thread);
         return result;
     }
     else
@@ -619,7 +645,7 @@ bool NOINLINE shadow_set_threadctx(HANDLE thread, CONTEXT& ctx, DWORD setFlags)
         NT_LOAD_FUNCTION(NtSetContextThread, false);
         ctx.ContextFlags = setFlags;
         long result = UNMASK_FUNCTION(NtSetContextThread)(thread, &ctx);
-        DebugNtResult(result, "NtSetContextThread");
+        DebugNtResult(result, "NtSetContextThread(%p)", thread);
         return result == 0;
     }
 }
@@ -632,14 +658,15 @@ bool NOINLINE shadow_suspend_thread(HANDLE thread)
     if (USER_LAND_FUNCTIONS)
     {
         int result = SuspendThread(thread);
-        indebug(if (result < 0) log("SuspendThread failed: %d\nReason: %s\n", result, shadow_getsyserr()));
-        return result >= 0;
+        bool success = result >= 0;
+        DebugUserLandResult(success, "SuspendThread(%p)", thread);
+        return success;
     }
     else
     {
         NT_LOAD_FUNCTION(NtSuspendThread, false);
         long result =  UNMASK_FUNCTION(NtSuspendThread)(thread, nullptr);
-        DebugNtResult(result, "NtSuspendThread");
+        DebugNtResult(result, "NtSuspendThread(%p)", thread);
         return result == 0;
     }
 }
@@ -648,14 +675,15 @@ bool NOINLINE shadow_resume_thread(HANDLE thread)
     if (USER_LAND_FUNCTIONS)
     {
         int result = ResumeThread(thread);
-        indebug(if (result < 0) log("ResumeThread failed: %d\nReason: %s\n", result, shadow_getsyserr()));
+        bool success = result >= 0;
+        DebugUserLandResult(success, "ResumeThread(%p)", thread);
         return result >= 0;
     }
     else
     {
         NT_LOAD_FUNCTION(NtAlertResumeThread, false);
         long result = UNMASK_FUNCTION(NtAlertResumeThread)(thread, nullptr);
-        DebugNtResult(result, "NtAlertResumeThread");
+        DebugNtResult(result, "NtAlertResumeThread(%p)", thread);
         return result == 0;
     }
 }
@@ -671,7 +699,7 @@ bool NOINLINE shadow_set_threadip(HANDLE thread, void* entryPoint)
     CONTEXT ctx = { 0 };
     if (shadow_get_threadctx(thread, ctx, CONTEXT_CONTROL))
     {
-        ctx.Eip = (DWORD)entryPoint;
+        ctx.Eip = DWORD(entryPoint);
         if (shadow_set_threadctx(thread, ctx, CONTEXT_CONTROL))
             return true;
     }
@@ -680,12 +708,37 @@ bool NOINLINE shadow_set_threadip(HANDLE thread, void* entryPoint)
 
 
 
+bool NOINLINE shadow_enable_debug_privilege(HANDLE proccess)
+{
+    bool result = false;
+    HANDLE hToken;
+    if (OpenProcessToken(proccess, TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY, &hToken))
+    {
+        TOKEN_PRIVILEGES tp;
+        tp.PrivilegeCount = 1;
+        tp.Privileges[0].Attributes    = SE_PRIVILEGE_ENABLED;
+        tp.Privileges[0].Luid.LowPart  = 20; // SeDebugPrivilege
+        tp.Privileges[0].Luid.HighPart = 0;
+        if (AdjustTokenPrivileges(hToken, false, &tp, 0, nullptr, nullptr))
+        {
+            result = true;
+        }
+        CloseHandle(hToken);
+    }
+    else
+    {
+        log("Failed to open process handle for privilege adjustment\n");
+    }
+    return result;
+}
+
+
 
 void NOINLINE shadow_scanmodules(HANDLE process, void* baseAddress, DWORD regionSize)
 {
     MEMORY_BASIC_INFORMATION info;
-    PCHAR nextBlock  = PCHAR(baseAddress);
-    PCHAR endAddress = nextBlock + regionSize;
+    auto nextBlock  = PCHAR(baseAddress);
+    auto endAddress = nextBlock + regionSize;
 
     IMAGE_DOS_HEADER doshdr;
     char path[MAX_PATH];
@@ -696,14 +749,14 @@ void NOINLINE shadow_scanmodules(HANDLE process, void* baseAddress, DWORD region
         shadow_vprint(info);
         if (info.State != MEM_FREE)
         {
-            ReadProcessMemory(process, info.BaseAddress, &doshdr, sizeof doshdr, 0);
+            ReadProcessMemory(process, info.BaseAddress, &doshdr, sizeof(doshdr), nullptr);
             if (doshdr.e_magic == IMAGE_DOS_SIGNATURE)
             {
-                GetModuleFileNameA((HMODULE)info.BaseAddress, path, MAX_PATH);
+                GetModuleFileNameA(HMODULE(info.BaseAddress), path, MAX_PATH);
                 log("Module: %s\n", path);
             }
         }
-        nextBlock = (PCHAR)info.BaseAddress + info.RegionSize;
+        nextBlock = PCHAR(info.BaseAddress) + info.RegionSize;
     }
 }
 void shadow_scanmodules(void* baseAddress, DWORD regionSize)
@@ -712,37 +765,25 @@ void shadow_scanmodules(void* baseAddress, DWORD regionSize)
 }
 
 
-bool shadow_listimports(std::vector<PCCH>& imports, HMODULE module)
+std::vector<rpp::strview> shadow_list_imports(HMODULE module)
 {
-    imports.clear();
+    std::vector<rpp::strview> imports;
 
-    PCHAR image = PCHAR(module);
-    PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)image;
-    if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
-        SetLastError(ERROR_BAD_EXE_FORMAT);
-        return false;
-    }
-    PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)&image[dos->e_lfanew];
-    if (nt->Signature != IMAGE_NT_SIGNATURE) {
-        SetLastError(ERROR_BAD_EXE_FORMAT);
-        return false;
-    }
-    PIMAGE_DATA_DIRECTORY dir = &nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-    if (dir->Size == 0) {
-        SetLastError(ERROR_PROC_NOT_FOUND); // no export table found
-        return false;
-    }
-    PIMAGE_IMPORT_DESCRIPTOR import = (PIMAGE_IMPORT_DESCRIPTOR)(image + dir->VirtualAddress);
+    PIMAGE_DATA_DIRECTORY dir = get_image_data_directory(module, IMAGE_DIRECTORY_ENTRY_IMPORT);
+    if (!dir) return imports;
+
+    auto code = PCHAR(module);
+    auto import = PIMAGE_IMPORT_DESCRIPTOR(code + dir->VirtualAddress);
     for (; import->Name; ++import)
     {
-        PCHAR lib = image + import->Name;
-        imports.push_back(lib);
+        char* lib = code + import->Name;
+        imports.emplace_back(lib);
     }
-    return true;
+    return imports;
 }
-bool shadow_listimports(std::vector<PCCH>& imports)
+std::vector<rpp::strview> shadow_list_imports()
 {
-    return shadow_listimports(imports, GetModuleHandleA(nullptr));
+    return shadow_list_imports(GetModuleHandleA(nullptr));
 }
 
 
@@ -766,6 +807,17 @@ bool NOINLINE shadow_listmodules(std::vector<std::string>& modules)
     return false;
 }
 
+
+
+HANDLE NOINLINE shadow_open_process_all_access(DWORD processId)
+{
+    HANDLE process = OpenProcess(PROCESS_ALL_ACCESS, TRUE, processId);
+    if (!process)
+    {
+        log("OpenProcess(%d) failed: %s\n", processId, shadow_getsyserr());
+    }
+    return process;
+}
 
 
 

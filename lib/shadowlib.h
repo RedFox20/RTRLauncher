@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <vector>
 #include <string>
+#include <map>
 #include <rpp/strview.h>
 
 
@@ -37,14 +38,14 @@ bool shadow_vquery(void* address, MEMORY_BASIC_INFORMATION& info);
  * @param protect [PAGE_READWRITE] Memory block protection flags - default RW
  * @param flags   [MEM_RESERVE|MEM_COMMIT] Memory alloc flags - default MEM_RESERVE|MEM_COMMIT
  */
-void* shadow_valloc(HANDLE process, void* address, DWORD size, DWORD protect = PAGE_READWRITE, 
-                          DWORD flags = MEM_RESERVE | MEM_COMMIT);
+PCHAR shadow_valloc(HANDLE process, void* address, DWORD size, DWORD protect = PAGE_READWRITE, 
+                    DWORD flags = MEM_RESERVE | MEM_COMMIT);
 /**
  * @brief Alloc a memory block for this process
  * @param protect [PAGE_READWRITE] Memory block protection flags - default RW
  * @param flags   [MEM_RESERVE|MEM_COMMIT] Memory alloc flags - default MEM_RESERVE|MEM_COMMIT
  */
-void* shadow_valloc(void* address, DWORD size, DWORD protect = PAGE_READWRITE, 
+PCHAR shadow_valloc(void* address, DWORD size, DWORD protect = PAGE_READWRITE, 
                     DWORD flags = MEM_RESERVE | MEM_COMMIT);
 
 
@@ -105,32 +106,67 @@ bool shadow_unmap(HANDLE process, void* baseAddress, DWORD regionSize);
 bool shadow_unmap(void* baseAddress, DWORD regionSize);
 
 
+/**
+ * Gets the export directory info from a module image
+ */
+PIMAGE_NT_HEADERS get_nt_headers(HMODULE module);
+
+/**
+ * @return TRUE if this module contains a valid IMAGE_NT_HEADERS
+ */
+bool is_valid_nt_module(HMODULE module);
+
+/**
+ * @param module
+ * @param image_directory_entry_id Example: IMAGE_DIRECTORY_ENTRY_EXPORT
+ * @return If it's a valid module, returns the specified module data directory
+ */
+PIMAGE_DATA_DIRECTORY get_image_data_directory(HMODULE module, int image_directory_entry_id);
+
+/**
+ * Gets the export directory info from a module image
+ */
+PIMAGE_EXPORT_DIRECTORY get_module_exports(HMODULE module);
+
+
+class ModuleProcCache
+{
+    std::map<rpp::strview, FARPROC> procs;
+public:
+    explicit ModuleProcCache(HMODULE module);
+    FARPROC find(rpp::strview name) const;
+};
+
 
 /**
  * @brief Manually gets proc address without using interceptable GetProcAddress
  */
-FARPROC shadow_getproc(void* hmodule, LPCSTR name);
+FARPROC shadow_getproc(HMODULE module, LPCSTR name);
 /**
  * @brief Manually get proc address directly from NTDLL.DLL
  * @brief No LoadLibrary / GetProcAddress calls are made
  */
-FARPROC shadow_ntdll_getproc(const char* func);
+FARPROC shadow_ntdll_getproc(rpp::strview func);
 /**
  * @brief Manually get proc address directly from KERNEL32.DLL
  * @brief No LoadLibrary / GetProcAddress calls are made
  */
-FARPROC shadow_kernel_getproc(const char* func);
+FARPROC shadow_kernel_getproc(rpp::strview func);
+
+template<class Func> Func shadow_kernel_getproc(rpp::strview func)
+{
+    FARPROC proc = shadow_kernel_getproc(func);
+    return reinterpret_cast<Func>(proc);
+}
 
 
 
 /**
  * @brief List all the procs in a module already loaded into memory
- * @param out Destination for the names of all the exported procs
- * @param hmodule Pointer to the start of the module. Can be a loaded DLL or just a loaded dll file buffer
+ * @param module Pointer to the start of the module. Can be a loaded DLL or just a loaded dll file buffer
  * @param istartsWith [optional] Case insensitive filter for a starts-with string comparison
- * @return false if failed, true otherwise. Resulting names in out vector.
  */
-bool shadow_listprocs(std::vector<const char*>& out, void* hmodule, const char* istartsWith = NULL);
+std::vector<rpp::strview> shadow_listprocs(HMODULE module, const char* istartsWith = nullptr);
 
 
 
@@ -149,7 +185,7 @@ HANDLE shadow_open_thread(DWORD threadId, DWORD flags);
 /**
  * @brief Closes an opened NT handle
  */
-void shadow_close_handle(HANDLE thread);
+void shadow_close_handle(HANDLE handle);
 
 
 struct ProcessInfo
@@ -219,12 +255,17 @@ bool shadow_resume_thread(HANDLE thread);
 bool shadow_set_threadip(HANDLE thread, void* newInstructionPointer);
 
 
+/**
+ * Enabled Debug privileges in the target process
+ */
+bool shadow_enable_debug_privilege(HANDLE proccess);
+
 
 void shadow_scanmodules(HANDLE process, void* baseAddress, DWORD regionSize);
 void shadow_scanmodules(void* baseAddress, DWORD regionSize);
 
-bool shadow_listimports(std::vector<PCCH>& imports, HMODULE module);
-bool shadow_listimports(std::vector<PCCH>& imports);
+std::vector<rpp::strview> shadow_list_imports(HMODULE module);
+std::vector<rpp::strview> shadow_list_imports();
 
 void shadow_unloadmodules();
 
@@ -233,6 +274,12 @@ void shadow_unloadmodules();
  */
 bool shadow_listmodules(std::vector<std::string>& modules);
 
-const char* shadow_getsyserr(long error = 0);
 
+/**
+ * Opens the process handle with PROCESS_ALL_ACCESS flags
+ */
+HANDLE shadow_open_process_all_access(DWORD processId);
+
+
+const char* shadow_getsyserr(long error = 0);
 

@@ -26,9 +26,16 @@ Enum(ManualInjectResult,
     GetProcNameFailed      // Get Proc by Name failed
 );
 
+// Inline string copy, because we can't link against strcpy in the injected code thread
+#define CopyString(dst, src, max) do { \
+    char* __dst = dst; \
+    char* __src = src; \
+    for (int i = 0; i < (max) && (__dst[i] = __src[i]) != '\0'; ++i); \
+    } while (false); 
+
 typedef struct _MANUAL_INJECT
 {
-    PCHAR                       PtrErr;
+    char Err[128];
     PVOID                       ImageBase;
     PIMAGE_NT_HEADERS           NtHeaders;
     PIMAGE_BASE_RELOCATION      BaseRelocation;
@@ -46,8 +53,8 @@ static DWORD WINAPI LoadDll(PMANUAL_INJECT Injector)
 {
     PIMAGE_BASE_RELOCATION IBR   = Injector->BaseRelocation;
     PIMAGE_IMPORT_DESCRIPTOR IID = Injector->ImportDirectory;
-    auto ImgBase = (PBYTE)Injector->ImageBase;
-    auto delta   = (DWORD)(ImgBase - Injector->NtHeaders->OptionalHeader.ImageBase); // Calculate the delta
+    auto ImgBase = static_cast<PCHAR>(Injector->ImageBase);
+    auto delta   = DWORD(ImgBase - Injector->NtHeaders->OptionalHeader.ImageBase); // Calculate the delta
     
     Injector->fnAllocConsole();
     HANDLE STDOUT = Injector->fnGetStdHandle(STD_OUTPUT_HANDLE);
@@ -58,31 +65,31 @@ static DWORD WINAPI LoadDll(PMANUAL_INJECT Injector)
     {
         if (IBR->SizeOfBlock >= sizeof(IMAGE_BASE_RELOCATION))
         {
-            const int count = (IBR->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
-            auto list = (PWORD)(IBR + 1);
+            DWORD count = DWORD(IBR->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
+            auto list = PWORD(IBR + 1);
 
-            for (int i = 0; i < count; ++i)
+            for (DWORD i = 0; i < count; ++i)
             {
                 if (list[i])
                 {
-                    auto ptr =(PDWORD)(ImgBase + (IBR->VirtualAddress + (list[i] & 0xFFF)));
+                    auto ptr = PDWORD(ImgBase + (IBR->VirtualAddress + (list[i] & 0xFFF)));
                     *ptr += delta;
                 }
             }
         }
-        IBR = (PIMAGE_BASE_RELOCATION)((PBYTE)IBR + IBR->SizeOfBlock);
+        IBR = PIMAGE_BASE_RELOCATION(PBYTE(IBR) + IBR->SizeOfBlock);
     }
 
     Injector->fnWriteConsoleA(STDOUT, "ResolveDLLImports", sizeof("ResolveDLLImports")-1, &written, nullptr);
     while (IID->Characteristics) // Resolve DLL imports
     {
-        auto OrigFirstThunk = (PIMAGE_THUNK_DATA)(ImgBase + IID->OriginalFirstThunk);
-        auto FirstThunk	 = (PIMAGE_THUNK_DATA)(ImgBase + IID->FirstThunk);
+        auto OrigFirstThunk = PIMAGE_THUNK_DATA(ImgBase + IID->OriginalFirstThunk);
+        auto FirstThunk     = PIMAGE_THUNK_DATA(ImgBase + IID->FirstThunk);
 
-        HMODULE hModule = Injector->fnLoadLibraryA((PCHAR)ImgBase + IID->Name);
+        HMODULE hModule = Injector->fnLoadLibraryA(ImgBase + IID->Name);
         if (!hModule)
         {
-            Injector->PtrErr = (PCHAR)ImgBase + IID->Name;
+            CopyString(Injector->Err, ImgBase + IID->Name, sizeof(Injector->Err));
             return DllImportFailed;
         }
 
@@ -91,11 +98,11 @@ static DWORD WINAPI LoadDll(PMANUAL_INJECT Injector)
             if (OrigFirstThunk->u1.Ordinal & IMAGE_ORDINAL_FLAG)
             {
                 // Import by ordinal
-                auto ProcName = (PCHAR)(OrigFirstThunk->u1.Ordinal & 0xFFFF);
-                auto Function = (DWORD)Injector->fnGetProcAddress(hModule, ProcName);
+                auto ProcName = PCHAR(OrigFirstThunk->u1.Ordinal & 0xFFFF);
+                auto Function = DWORD(Injector->fnGetProcAddress(hModule, ProcName));
                 if (!Function)
                 {
-                    Injector->PtrErr = ProcName;
+                    CopyString(Injector->Err, ProcName, sizeof(Injector->Err));
                     return GetProcOrdinalFailed;
                 }
                 FirstThunk->u1.Function = Function;
@@ -103,11 +110,11 @@ static DWORD WINAPI LoadDll(PMANUAL_INJECT Injector)
             else
             {
                 // Import by name
-                auto IBN = (PIMAGE_IMPORT_BY_NAME)(ImgBase + OrigFirstThunk->u1.AddressOfData);
-                auto Function = (DWORD)Injector->fnGetProcAddress(hModule, IBN->Name);
+                auto IBN = PIMAGE_IMPORT_BY_NAME(ImgBase + OrigFirstThunk->u1.AddressOfData);
+                auto Function = DWORD(Injector->fnGetProcAddress(hModule, IBN->Name));
                 if (!Function)
                 {
-                    Injector->PtrErr = IBN->Name;
+                    CopyString(Injector->Err, IBN->Name, sizeof(Injector->Err));
                     return GetProcNameFailed;
                 }
                 FirstThunk->u1.Function = Function;
@@ -121,17 +128,11 @@ static DWORD WINAPI LoadDll(PMANUAL_INJECT Injector)
     if (Injector->NtHeaders->OptionalHeader.AddressOfEntryPoint)
     {
         Injector->fnWriteConsoleA(STDOUT, "CallEntryPoint", sizeof("CallEntryPoint")-1, &written, nullptr);
-        auto EntryPoint = (pDllMain)(ImgBase + Injector->NtHeaders->OptionalHeader.AddressOfEntryPoint);
-        return EntryPoint((HMODULE)ImgBase, 1, nullptr); // Call the entry point
+        auto EntryPoint = pDllMain(ImgBase + Injector->NtHeaders->OptionalHeader.AddressOfEntryPoint);
+        return EntryPoint(HMODULE(ImgBase), 1, nullptr); // Call the entry point
     }
     return DllMainSuccess; // EntryPoint is optional for this Manual Injection
 }
-#pragma optimize("", off) // disable all optimizations - we need this function to exist
-static DWORD WINAPI LoadDllEnd()
-{
-    return 0;
-}
-#pragma optimize("", on) // restore optimization flags
 #pragma runtime_checks("", restore) // restore any specified runtime checks
 
 
@@ -162,12 +163,6 @@ static DWORD WINAPI FileLoadDll(PFILE_INJECT Injector)
 
     return (DWORD)Injector->fnLoadLibraryA(Injector->LibName);
 }
-#pragma optimize("", off) // disable all optimizations - we need this function to exist
-static DWORD WINAPI FileLoadDllEnd()
-{
-    return 0;
-}
-#pragma optimize("", on) // restore optimization flags
 #pragma runtime_checks("", restore) // restore any specified runtime checks
 
 
@@ -195,7 +190,7 @@ remote_dll_injector::remote_dll_injector()
 }
 remote_dll_injector::remote_dll_injector(int resourceId)
 {
-    Resource = LoadResource(0, FindResourceA(0, MAKEINTRESOURCEA(resourceId), RT_RCDATA));
+    Resource = LoadResource(nullptr, FindResourceA(nullptr, MAKEINTRESOURCEA(resourceId), RT_RCDATA));
     Image    = LockResource(Resource);
 }
 remote_dll_injector::remote_dll_injector(void* pInjectableDllImage)
@@ -216,33 +211,18 @@ remote_dll_injector::~remote_dll_injector()
 
 static const char secOK[] = "[==] Injector [==]";
 static const char secFF[] = "[!!] Injector [!!]";
-static bool DebugPriviledgeSet = false;
+static bool DebugPrivilegeSet = false;
 
-void remote_dll_injector::enable_debug_priviledge()
+void remote_dll_injector::enable_debug_privilege()
 {
-    logsec(secOK, "Enabling Debug Priviledge\n");
-    HANDLE hToken;
-    if (OpenProcessToken((HANDLE)-1, TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY, &hToken))
+    logsec(secOK, "Enabling Debug Privilege\n");
+    if (shadow_enable_debug_privilege(GetCurrentProcess()))
     {
-        TOKEN_PRIVILEGES tp;
-        tp.PrivilegeCount = 1;
-        tp.Privileges[0].Attributes    = SE_PRIVILEGE_ENABLED;
-        tp.Privileges[0].Luid.LowPart  = 20; // SeDebugPriviledge
-        tp.Privileges[0].Luid.HighPart = 0;
-        if (AdjustTokenPrivileges(hToken, FALSE, &tp, 0, 0, 0))
-        {
-            logsec(secOK, "Debug Priviledge SET SUCCESS\n");
-            DebugPriviledgeSet = true;
-        }
-        else
-            logsec(secFF, "Debug Priviledge SET FAILED\n");
-        CloseHandle(hToken);
+        DebugPrivilegeSet = true;
+        logsec(secOK, "CURRENT_PROCESS Debug Privilege SET SUCCESS\n");
     }
-    else
-        logsec(secFF, "Failed to open current process handle for priviledge adjustment\n");
+    else logsec(secFF, "CURRENT_PROCESS Debug Privilege SET FAILED\n");
 }
-
-
 
 constexpr auto LoadLibraryAName = make_obfuscated("LoadLibraryA");
 constexpr auto GetProcAddressName = make_obfuscated("GetProcAddress");
@@ -257,28 +237,33 @@ bool validate_injected_code(HANDLE process, PCHAR codeAddress, void* referenceCo
 
 bool remote_dll_injector::inject_dllfile(void* targetProcessHandle, const char* filename)
 {
-    // Set DEBUG priviledge ENABLED for the Current process to get sufficient rights
-    if (!DebugPriviledgeSet)
-        enable_debug_priviledge();
+    // Set DEBUG privilege ENABLED for the Current process to get sufficient rights
+    if (!DebugPrivilegeSet)
+        enable_debug_privilege();
 
-    auto process = (HANDLE)targetProcessHandle;
+    if (shadow_enable_debug_privilege(targetProcessHandle))
+        logsec(secOK, "TARGET_PROCESS Debug Privilege SET SUCCESS\n");
+    else
+        logsec(secFF, "TARGET_PROCESS Debug Privilege SET FAILED\n");
+
+    auto process = HANDLE(targetProcessHandle);
     // allocate memory for the loader code in the remote process
     //  === loader ===
     //  [ global data ]
     //  [ loader code ]
-    auto loader = (PCHAR)shadow_valloc(process, nullptr, 16*1024, PAGE_EXECUTE_READWRITE); // Allocate memory for the loader code
+    DWORD codeSize = 8*1024; // @todo Calculate code size in a reliable way
+    PCHAR loader = shadow_valloc(process, nullptr, codeSize + 4096, PAGE_EXECUTE_READWRITE); // Allocate memory for the loader code
     if (!loader)
     {
         logsec(secFF, "Unable to allocate memory for loader in remote process\n");
         return false;
     }
 
-
     FILE_INJECT FileInject;
-    FileInject.fnLoadLibraryA = (pLoadLibraryA)shadow_kernel_getproc(LoadLibraryAName.to_string().c_str());
-    FileInject.fnWriteConsoleA = (pWriteConsoleA)shadow_kernel_getproc("WriteConsoleA");
-    FileInject.fnGetStdHandle  = (pGetStdHandle)shadow_kernel_getproc("GetStdHandle");
-    FileInject.fnAllocConsole  = (pAllocConsole)shadow_kernel_getproc("AllocConsole");
+    FileInject.fnLoadLibraryA  = shadow_kernel_getproc<pLoadLibraryA>("LoadLibraryA");
+    FileInject.fnWriteConsoleA = shadow_kernel_getproc<pWriteConsoleA>("WriteConsoleA");
+    FileInject.fnGetStdHandle  = shadow_kernel_getproc<pGetStdHandle>("GetStdHandle");
+    FileInject.fnAllocConsole  = shadow_kernel_getproc<pAllocConsole>("AllocConsole");
     GetFullPathNameA(filename, sizeof(FileInject.LibName), FileInject.LibName, nullptr);
 
     logsec(secOK, "Allocated loader at: %p\n", loader);
@@ -287,7 +272,6 @@ bool remote_dll_injector::inject_dllfile(void* targetProcessHandle, const char* 
     // Write the loader information to target process
     shadow_vwrite(process, loader, &FileInject, sizeof(FileInject));
 
-    DWORD codeSize = (DWORD)FileLoadDllEnd - (DWORD)FileLoadDll;
     PCHAR codeAddr = loader + sizeof(PFILE_INJECT);
     codeAddr += reinterpret_cast<int>(codeAddr) % 64; // align code to 64-byte boundary
 
@@ -301,20 +285,29 @@ bool remote_dll_injector::inject_dllfile(void* targetProcessHandle, const char* 
 
     // don't use WaitForSingleObject(hThread, INFINITE); here! Will deadlock if client DLL 
     // creates new thread during load, so we use a silly loop instead
-    HMODULE loadedModule;
+    HMODULE loadedModule = nullptr;
+    DWORD returnCode;
     // get return code, which is actually the loaded HMODULE
-    while (GetExitCodeThread(hThread, reinterpret_cast<DWORD*>(&loadedModule))
-        && int(loadedModule) == STILL_ACTIVE)
+    while (GetExitCodeThread(hThread, &returnCode))
     {
+        consolef("ReturnCode: %d\n", returnCode);
+        if (returnCode != STILL_ACTIVE)
+        {
+            loadedModule = HMODULE(returnCode);
+            break;
+        }
         Sleep(100); // wait for it...
         consolef("waiting...\n");
     }
 
+    consolef("error (if any): %s\n", shadow_getsyserr());
+    consolef("error (if any): %s\n", shadow_getsyserr(returnCode));
+
     // Close thread and unload loader from memory
     shadow_close_handle(hThread);
-    shadow_vfree(process, loader);
+    //shadow_vfree(process, loader);
 
-    if (!loadedModule) // LoadLibrary failed
+    if (loadedModule == nullptr) // LoadLibrary failed
     {
         logsec(secFF, "Remote LoadLibrary failed! %s\n", shadow_getsyserr());
         return false;
@@ -323,13 +316,13 @@ bool remote_dll_injector::inject_dllfile(void* targetProcessHandle, const char* 
 }
 
 
-inject_result remote_dll_injector::inject_dllimage(void* targetProcessHandle)
+inject_result remote_dll_injector::inject_dllimage(void* targetProcessHandle) const
 {
-    // Set DEBUG priviledge ENABLED for the Current process to get sufficient rights
-    if (!DebugPriviledgeSet)
-        enable_debug_priviledge();
+    // Set DEBUG privilege ENABLED for the Current process to get sufficient rights
+    if (!DebugPrivilegeSet)
+        enable_debug_privilege();
 
-    inject_result result = { targetProcessHandle };
+    inject_result result = { targetProcessHandle, nullptr };
 
     // allocate memory for the image
     auto DOS = static_cast<PIMAGE_DOS_HEADER>(Image);
@@ -339,7 +332,7 @@ inject_result remote_dll_injector::inject_dllimage(void* targetProcessHandle)
         return result;
     }
 
-    auto NT = reinterpret_cast<PIMAGE_NT_HEADERS>((LPBYTE)Image + DOS->e_lfanew);
+    auto NT = reinterpret_cast<PIMAGE_NT_HEADERS>(PBYTE(Image) + DOS->e_lfanew);
     if (!(NT->FileHeader.Characteristics & IMAGE_FILE_DLL)) // ensure it's a DLL
     {
         logsec(secFF, "Image file is not a DLL\n");
@@ -347,7 +340,7 @@ inject_result remote_dll_injector::inject_dllimage(void* targetProcessHandle)
     }
 
     HANDLE hProcess = targetProcessHandle;
-    auto image = (PCHAR)shadow_valloc(hProcess, nullptr, NT->OptionalHeader.SizeOfImage, PAGE_EXECUTE_READWRITE); // Allocate memory for the DLL
+    PCHAR image = shadow_valloc(hProcess, nullptr, NT->OptionalHeader.SizeOfImage, PAGE_EXECUTE_READWRITE); // Allocate memory for the DLL
     if (!image)
     {
         logsec(secFF, "Failed to allocate in remote process\n");
@@ -364,17 +357,18 @@ inject_result remote_dll_injector::inject_dllimage(void* targetProcessHandle)
 
     // Copy sections to target process
     PIMAGE_SECTION_HEADER ISH = IMAGE_FIRST_SECTION(NT);
-    for (int i = 0; i < (int)NT->FileHeader.NumberOfSections; ++i)
+    for (int i = 0; i < int(NT->FileHeader.NumberOfSections); ++i)
     {
         IMAGE_SECTION_HEADER& sec = ISH[i];
-        shadow_vwrite(hProcess, image + sec.VirtualAddress, (char*)Image + sec.PointerToRawData, sec.SizeOfRawData);
+        shadow_vwrite(hProcess, image + sec.VirtualAddress, PCHAR(Image) + sec.PointerToRawData, sec.SizeOfRawData);
     }
 
     // allocate memory for the loader code in the remote process
     //  === loader ===
     //  [ global data ]
     //  [ loader code ]
-    auto loader = (PCHAR)shadow_valloc(hProcess, nullptr, 16*1024, PAGE_EXECUTE_READWRITE); // Allocate memory for the loader code
+    DWORD codeSize = 8*1024; // @todo Calculate code size in a reliable way
+    PCHAR loader = shadow_valloc(hProcess, nullptr, codeSize + 4096, PAGE_EXECUTE_READWRITE); // Allocate memory for the loader code
     if (!loader)
     {
         logsec(secFF, "Unable to allocate memory for loader in remote process\n");
@@ -384,27 +378,27 @@ inject_result remote_dll_injector::inject_dllimage(void* targetProcessHandle)
 
     logsec(secOK, "Allocated loader at: %p\n", loader);
 
-    MANUAL_INJECT ManualInject = { nullptr };
-    ManualInject.ImageBase        = image;
-    ManualInject.NtHeaders        = (PIMAGE_NT_HEADERS)(image + DOS->e_lfanew);
-    ManualInject.BaseRelocation   = (PIMAGE_BASE_RELOCATION)(image + NT->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
-    ManualInject.ImportDirectory  = (PIMAGE_IMPORT_DESCRIPTOR)(image + NT->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-    ManualInject.fnLoadLibraryA   = (pLoadLibraryA)shadow_kernel_getproc(LoadLibraryAName.to_string().c_str());
-    ManualInject.fnGetProcAddress = (pGetProcAddress)shadow_kernel_getproc(GetProcAddressName.to_string().c_str());
-    ManualInject.fnWriteConsoleA  = (pWriteConsoleA)shadow_kernel_getproc("WriteConsoleA");
-    ManualInject.fnGetStdHandle   = (pGetStdHandle)shadow_kernel_getproc("GetStdHandle");
-    ManualInject.fnAllocConsole   = (pAllocConsole)shadow_kernel_getproc("AllocConsole");
+    MANUAL_INJECT ManualInject;
+    ManualInject.Err[0]    = '\0';
+    ManualInject.ImageBase = image;
+    ManualInject.NtHeaders        =        PIMAGE_NT_HEADERS(image + DOS->e_lfanew);
+    ManualInject.BaseRelocation   =   PIMAGE_BASE_RELOCATION(image + NT->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
+    ManualInject.ImportDirectory  = PIMAGE_IMPORT_DESCRIPTOR(image + NT->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+    ManualInject.fnLoadLibraryA   = shadow_kernel_getproc<pLoadLibraryA>(LoadLibraryAName.to_string().c_str());
+    ManualInject.fnGetProcAddress = shadow_kernel_getproc<pGetProcAddress>(GetProcAddressName.to_string().c_str());
+    ManualInject.fnWriteConsoleA  = shadow_kernel_getproc<pWriteConsoleA>("WriteConsoleA");
+    ManualInject.fnGetStdHandle   = shadow_kernel_getproc<pGetStdHandle>("GetStdHandle");
+    ManualInject.fnAllocConsole   = shadow_kernel_getproc<pAllocConsole>("AllocConsole");
 
     // Write the loader information to target process
     shadow_vwrite(hProcess, loader, &ManualInject, sizeof(ManualInject));
 
-    DWORD codeSize = (DWORD)LoadDllEnd-(DWORD)LoadDll;
     PCHAR codeAddr = loader + sizeof(PMANUAL_INJECT);
     codeAddr += reinterpret_cast<int>(codeAddr) % 64; // align code to 64-byte boundary
 
     // Write the loader code to target process
-    shadow_vwrite(hProcess, codeAddr, LoadDll, codeSize);
-    if (!validate_injected_code(hProcess, codeAddr, LoadDll, codeSize))
+    shadow_vwrite(hProcess, codeAddr, &LoadDll, codeSize);
+    if (!validate_injected_code(hProcess, codeAddr, &LoadDll, codeSize))
         logsec(secFF, "Injected Code validation failed! Bytes do not match.\n");
 
     // Create a remote thread to execute the loader code
@@ -418,28 +412,28 @@ inject_result remote_dll_injector::inject_dllimage(void* targetProcessHandle)
     }
 
     // Wait for loader thread to finish execution and grab the results
-    ManualInjectResult returnCode = DllMainFailed;
-    while (GetExitCodeThread(hThread, reinterpret_cast<DWORD*>(&returnCode))
+    DWORD returnCode;
+    while (GetExitCodeThread(hThread, &returnCode)
         && int(returnCode) == STILL_ACTIVE)
     {
         Sleep(10); // wait for it...
     }
 
-    CHAR errString[128] = "Unknown";
-    CHAR* loaderProcErrPtr = 0; // pointer to errmsg in loader proc
+    auto injectResult = ManualInjectResult(returnCode);
 
-    shadow_vread(hProcess, loader, &loaderProcErrPtr, sizeof PCHAR);
-    if (loaderProcErrPtr)
-        shadow_vread(hProcess, loaderProcErrPtr, errString, 128);
+    // load back the injection struct to get the error string
+    shadow_vread(hProcess, loader, &ManualInject, sizeof(ManualInject));
 
     // Close thread and unload loader from memory
     shadow_close_handle(hThread);
     shadow_vfree(hProcess, loader);
 
-    if (returnCode != DllMainSuccess) // on failure release the image
+    if (injectResult != DllMainSuccess) // on failure release the image
     {
         logsec(secFF, "Loader failed during runtime (ErrCode %d): "
-               "'%s' (%s) in module %s\n", returnCode, enum_cstr(returnCode), shadow_getsyserr(returnCode), errString);
+               "'%s' (%s) in module %s\n",
+            returnCode, enum_cstr(injectResult), shadow_getsyserr(returnCode), ManualInject.Err);
+
         shadow_vfree(hProcess, image);
         return result;
     }
@@ -456,12 +450,12 @@ inject_result remote_dll_injector::inject_dllimage(void* targetProcessHandle)
 bool remote_dll_injector::reserve_target_memory(void* targetProcessHANDLE, int reserveSize)
 {
     // Set DEBUG priviledge ENABLED for the Current process to get sufficient rights
-    if (!DebugPriviledgeSet)
-        enable_debug_priviledge();
+    if (!DebugPrivilegeSet)
+        enable_debug_privilege();
 
     MEMORY_BASIC_INFORMATION info;
-    void* hProcess    = targetProcessHANDLE;
-    PCHAR baseAddress = PCHAR(0x00400000);
+    void* hProcess   = targetProcessHANDLE;
+    auto baseAddress = PCHAR(0x00400000);
     logsec(secOK, "Reserve up to: %8x\n", baseAddress + reserveSize);
     shadow_vprint(hProcess, baseAddress, reserveSize);
 

@@ -6,6 +6,9 @@
 #include "../Launcher/resource.h"
 #include <memory_map.h>
 #include <shadowlib.h>
+#include <aclapi.h> // EXPLICIT_ACCESS
+#pragma comment(lib, "advapi32.lib")
+
 
 static const char secOK[] = "[+] RomeLoader [+]";
 static const char secFF[] = "[!] RomeLoader [!]";
@@ -133,6 +136,66 @@ static DecompressedData unpack_resource(int resourceId)
     return generic_decompress(*(DecompressParams*)pz.data, pz.data + sizeof(DecompressParams));
 }
 
+// @note This leaks the handles, because I don't care :D
+bool CreateSecurityAttributes(SECURITY_ATTRIBUTES& sa)
+{
+    EXPLICIT_ACCESS ea[2]; ZeroMemory(&ea, sizeof(ea));
+
+    // Create a well-known SID for the Everyone group.
+    PSID pEveryoneSID = nullptr;
+    SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
+    if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID,
+                                  0, 0, 0, 0, 0, 0, 0, &pEveryoneSID))
+        return false;
+
+    // Initialize an EXPLICIT_ACCESS structure for an ACE.
+    // The ACE will allow Everyone full access 
+    ea[0].grfAccessPermissions = KEY_ALL_ACCESS;
+    ea[0].grfAccessMode  = SET_ACCESS;
+    ea[0].grfInheritance = NO_INHERITANCE;
+    ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+    ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+    ea[0].Trustee.ptstrName   = LPTSTR(pEveryoneSID);
+
+    // Create a SID for the BUILTIN\Administrators group.
+    PSID pAdminSID = nullptr;
+    SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
+    if (!AllocateAndInitializeSid(&SIDAuthNT, 2, SECURITY_BUILTIN_DOMAIN_RID,
+                                  DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &pAdminSID)) 
+        return false;
+
+    // Initialize an EXPLICIT_ACCESS structure for an ACE.
+    // The ACE will allow the Administrators group full access
+    ea[1].grfAccessPermissions = KEY_ALL_ACCESS;
+    ea[1].grfAccessMode  = SET_ACCESS;
+    ea[1].grfInheritance = NO_INHERITANCE;
+    ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+    ea[1].Trustee.TrusteeType = TRUSTEE_IS_GROUP;
+    ea[1].Trustee.ptstrName   = LPTSTR(pAdminSID);
+    
+    // Create a new ACL that contains the new ACEs.
+    PACL pACL = nullptr;
+    if (ERROR_SUCCESS != SetEntriesInAcl(2, ea, nullptr, &pACL)) 
+        return false;
+
+    // Initialize a security descriptor.
+    auto pSD = PSECURITY_DESCRIPTOR(LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH)); 
+    if (pSD == nullptr) 
+        return false;
+ 
+    if (!InitializeSecurityDescriptor(pSD, SECURITY_DESCRIPTOR_REVISION)) 
+        return false;
+ 
+    // Add the ACL to the security descriptor. 
+    if (!SetSecurityDescriptorDacl(pSD, true, pACL, false))
+        return false;
+
+    // Initialize a security attributes structure.
+    sa.nLength = sizeof (SECURITY_ATTRIBUTES);
+    sa.lpSecurityDescriptor = pSD;
+    sa.bInheritHandle = true;
+    return true;
+}
 
 namespace core
 {
@@ -158,9 +221,17 @@ namespace core
         STARTUPINFO si = { sizeof(si) };
         PROCESS_INFORMATION pi = { nullptr, nullptr };
 
+
+        SECURITY_ATTRIBUTES sa;
+        if (!CreateSecurityAttributes(sa))
+        {
+            logsec(secFF, "Error: Failed to create global access Security Attributes\n");
+        }
+
         string command = cmd;
+        DWORD creationFlags = CREATE_SUSPENDED|CREATE_NEW_CONSOLE;
         if (CreateProcessA(nullptr, command.data(), nullptr, nullptr, 0,
-                           CREATE_SUSPENDED, nullptr, workingDir.c_str(), &si, &pi))
+                           creationFlags, nullptr, workingDir.c_str(), &si, &pi))
         {
             // This sends the patched EXE to GameEngine DllMain
             if (false)
@@ -212,7 +283,7 @@ namespace core
     {
         DecompressedData gameEngine = unpack_resource(IDR_DLL_GAMEENGINE);
         //bool useFileInject = ValidateGameEngineDll(gameEngine.size);
-        bool useFileInject = false;
+        bool useFileInject = false; // rpp::file_exists("GameEngine.dll");
         if (st.DebugAttach)
         {
             logsec(secOK, "VS JIT Attach\n");
@@ -230,14 +301,17 @@ namespace core
         bool injectSuccess = !st.Inject; // if injecting assume false, otherwise assume true
         if (st.Inject)
         {
+            logsec(secOK, "Opening process with PROCESS_ALL_ACCESS privileges\n");
+            HANDLE process = pi.hProcess; // shadow_open_process_all_access(pi.dwProcessId);
+
             // reserve just enough memory for RomeTW-ALX.exe
             logsec(secOK, "Reserving target memory\n");
-            remote_dll_injector::reserve_target_memory(pi.hProcess, 0x0269ea9e);
+            remote_dll_injector::reserve_target_memory(process, 0x0269ea9e);
             if (useFileInject)
             {
                 // for debugger inject and if it exists, we use GameEngine.dll FILE
                 logsec(secOK, "Injecting DEBUG .\\GameEngine.dll...\n");
-                injectSuccess = remote_dll_injector::inject_dllfile(pi.hProcess, "GameEngine.dll");
+                injectSuccess = remote_dll_injector::inject_dllfile(process, "GameEngine.dll");
             }
             else
             {
@@ -246,7 +320,7 @@ namespace core
                 injectSuccess = (bool)injector;
                 if (injectSuccess) {
                     logsec(secOK, "Injecting RESOURCE GameEngine.dll...\n");
-                    injectSuccess = (bool)injector.inject_dllimage(pi.hProcess);
+                    injectSuccess = (bool)injector.inject_dllimage(process);
                 }
                 else logsec(secFF, "Error: GameEngine.dll embedded resource not found!");
             }
@@ -254,7 +328,7 @@ namespace core
 
         if (injectSuccess) {
             logsec(secOK, "Launching the game!\n\n");
-            //ResumeThread(pi.hThread); // Launch!!!
+            ResumeThread(pi.hThread); // Launch!!! Only useful if injector didn't resume the main thread
             return true;
         }
         return false;
