@@ -150,6 +150,7 @@ namespace core
         //shadow_listmodules(modules);
         //for (auto& path : modules)
         //	log("loaded: %s\n", path.c_str());
+        
 
         string cmd = Game.FullPath + " " + commandLine;
         RomeLoader::Start(cmd, GameDir, Settings);
@@ -183,8 +184,8 @@ namespace core
 
         //CmdLine += " -battle_ed:imperial_campaign";
         //CmdLine += " -cbf";
-        if (!Settings.ModName.empty()) // only if we have a modname
-            cmd += " -mod:" + Settings.ModName;
+        //if (!Settings.ModName.empty()) // only if we have a modname
+        //    cmd += " -mod:" + Settings.ModName;
         cmd += " -noalexander";
         logsec(secOK, "Args:%s\n", cmd.c_str());
         return cmd;

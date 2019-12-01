@@ -137,8 +137,9 @@ LRESULT CMainDlg::OnOK(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /
     // start final foreground task... (
     Launcher.Start();
     if (Launcher.LaunchGame())
-        CloseDialog(wID); // close the launcher on success
-
+    {
+        //CloseDialog(wID); // close the launcher on success
+    }
     return 0;
 }
 

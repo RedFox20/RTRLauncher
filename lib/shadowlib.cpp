@@ -22,11 +22,11 @@
 #  define indebug(...)
 #endif
 
-constexpr bool USER_LAND_FUNCTIONS = true;
+constexpr bool USER_LAND_FUNCTIONS = false;
 
 typedef long (WINAPI*fnNtQueryVirtualMemory)   (void*, void*, DWORD, void*, ULONG, ULONG*);
 typedef long (WINAPI*fnNtAllocateVirtualMemory)(HANDLE, PVOID*, ULONG_PTR, PSIZE_T, ULONG, ULONG);
-typedef long (WINAPI*fnNtReadVirtualMemory)    (void*, void*, OUT void**, SIZE_T, OUT SIZE_T*);
+typedef long (WINAPI*fnNtReadVirtualMemory)    (void*, void*, OUT void*, SIZE_T, OUT SIZE_T*);
 typedef long (WINAPI*fnNtWriteVirtualMemory)   (void*, void*, void*, ULONG, OUT ULONG*);
 typedef long (WINAPI*fnNtFreeVirtualMemory)    (void*, IN OUT void**, IN OUT ULONG*, ULONG);
 typedef BOOL (WINAPI*fnVirtualFreeEx)          (void*, void*, SIZE_T, DWORD);
@@ -97,19 +97,24 @@ constexpr uint32_t FUNCTION_MASK = 0xCAFEBABE;
     if (!p##FuncName) { \
         p##FuncName = (fn##FuncName)shadow_ntdll_getproc((ob##FuncName).to_string().c_str()); \
         if (!p##FuncName) { indebug(log("nlzf %s failed\n", (ob##FuncName).to_string().c_str())); \
-        *(uint32_t*)(&p##FuncName) = (uint32_t)(p##FuncName) ^ FUNCTION_MASK; \
         return failedResult; } \
     }
-
-#define UNMASK_FUNCTION(FuncName) ((decltype(p##FuncName))(uint32_t(p##FuncName) ^ FUNCTION_MASK))
+        //*(uint32_t*)(&p##FuncName) = (uint32_t)(p##FuncName) ^ FUNCTION_MASK; \
+//#define UNMASK_FUNCTION(FuncName) ((decltype(p##FuncName))(uint32_t(p##FuncName) ^ FUNCTION_MASK))
+#define UNMASK_FUNCTION(FuncName) (p##FuncName)
 
 
 #define DebugUserLandResult(result, function) \
-    indebug(if (!(result)) log(function" failed: %p\nReason: %s\n", result, shadow_getsyserr()));
+    indebug(if (!(result)) { \
+        log(function" failed: %p\nReason: %s\n", result, shadow_getsyserr()); \
+        __debugbreak(); \
+    })
 
 
 #define DebugNtResult(result, function) \
-    indebug(if (result) log(function" failed: %p\nReason: %s\n", result, shadow_getsyserr()));
+    indebug(if (result) { \
+        log(function" failed: %p\nReason: %s\n", result, shadow_getsyserr()); \
+    })
 
 
 bool NOINLINE shadow_vquery(HANDLE process, void* address, MEMORY_BASIC_INFORMATION& info)
@@ -135,9 +140,9 @@ bool shadow_vquery(void* address, MEMORY_BASIC_INFORMATION& info)
 
 PVOID NOINLINE shadow_valloc(HANDLE process, void* address, DWORD size, DWORD protect, DWORD flags)
 {
-    log("valloc %p %p %d %x %x => ", process, address, size, protect, flags);
     if (USER_LAND_FUNCTIONS)
     {
+        log("valloc %p %p %d %x %x => ", process, address, size, protect, flags);
         PVOID result = VirtualAllocEx(process, address, size, flags, protect);
         DebugUserLandResult(result, "VirtualAllocEx");
         shadow_vprint(process, result, 1);
@@ -176,7 +181,7 @@ bool NOINLINE shadow_vread(HANDLE process, void* address, void* buffer, DWORD si
     else
     {
         NT_LOAD_FUNCTION(NtReadVirtualMemory, false);
-        long result = UNMASK_FUNCTION(NtReadVirtualMemory)(process, address, &buffer, size, nullptr);
+        long result = UNMASK_FUNCTION(NtReadVirtualMemory)(process, address, buffer, size, nullptr);
         DebugNtResult(result, "NtReadVirtualMemory");
         return result == 0;
     }
@@ -199,8 +204,8 @@ bool NOINLINE shadow_vwrite(HANDLE process, void* address, void* buffer, DWORD s
         NT_LOAD_FUNCTION(NtWriteVirtualMemory, false);
         long result = UNMASK_FUNCTION(NtWriteVirtualMemory)(process, address, buffer, size, nullptr);
         DebugNtResult(result, "NtWriteVirtualMemory");
+        return result == 0;
     }
-
 }
 bool shadow_vwrite(void* address, void* buffer, DWORD size)
 {
@@ -439,7 +444,7 @@ bool NOINLINE shadow_listprocs(std::vector<const char*>& out, void* hmodule, con
 
 HANDLE NOINLINE shadow_create_thread(HANDLE process, LPTHREAD_START_ROUTINE start, void* param, bool suspended)
 {
-    if (USER_LAND_FUNCTIONS)
+    if (true || USER_LAND_FUNCTIONS)
     {
         DWORD tid;
         HANDLE thread = CreateRemoteThread(process, nullptr, 256 * 1024, start, param, 
@@ -510,14 +515,33 @@ void NOINLINE shadow_close_handle(HANDLE thread)
     }
 }
 
+std::vector<ProcessInfo> shadow_get_processes(rpp::strview name)
+{
+    PROCESSENTRY32 entry;
+    entry.dwSize = sizeof(PROCESSENTRY32);
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+    std::vector<ProcessInfo> out;
+    if (Process32First(snapshot, &entry) == TRUE)
+    {
+        while (Process32Next(snapshot, &entry) == TRUE)
+        {
+            std::string exeFile = entry.szExeFile;
+            if (name.empty() || rpp::strview{exeFile}.contains(name))
+            {
+                out.push_back({std::move(exeFile), entry.th32ProcessID});
+            }
+        }
+    }
+    return out;
+}
 
 
-
-int NOINLINE shadow_get_threads(std::vector<DWORD>& out, DWORD processId)
+std::vector<DWORD> NOINLINE shadow_get_threads(DWORD processId)
 {
     const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, processId);
     THREADENTRY32 entry = { sizeof entry };
-    out.clear();
+    std::vector<DWORD> out;
     if (Thread32First(snapshot, &entry)) do
     {
         if (entry.th32OwnerProcessID == processId)
@@ -525,11 +549,11 @@ int NOINLINE shadow_get_threads(std::vector<DWORD>& out, DWORD processId)
     } 
     while (Thread32Next(snapshot, &entry));
     CloseHandle(snapshot);
-    return (int)out.size();
+    return out;
 }
-int shadow_get_threads(std::vector<DWORD>& out)
+std::vector<DWORD> shadow_get_threads()
 {
-    return shadow_get_threads(out, GetCurrentProcessId());
+    return shadow_get_threads(GetCurrentProcessId());
 }
 
 int NOINLINE shadow_get_threadcount(DWORD processId)

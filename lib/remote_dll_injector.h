@@ -3,7 +3,7 @@
 struct inject_result
 {
     void* Process;
-    void* DllImage;		// LPVOID if we loaded from resource / image data
+    void* DllImage; // LPVOID if we loaded from resource / image data
 
     explicit operator bool() const { return DllImage != nullptr; }
 
@@ -15,8 +15,8 @@ struct inject_result
 
 struct remote_dll_injector
 {
-    void*	Image;		// injectable Dll *image
-    void*	Resource;	// managed resource
+    void* Image;    // injectable Dll *image
+    void* Resource; // managed resource
 
     remote_dll_injector();
     remote_dll_injector(int resourceId);

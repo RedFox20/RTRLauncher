@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <vector>
 #include <string>
+#include <rpp/strview.h>
 
 
 /**
@@ -151,15 +152,26 @@ HANDLE shadow_open_thread(DWORD threadId, DWORD flags);
 void shadow_close_handle(HANDLE thread);
 
 
+struct ProcessInfo
+{
+    std::string name;
+    DWORD pid;
+};
+
+/**
+ * @brief Gets all processes which partially match the name
+ */
+std::vector<ProcessInfo> shadow_get_processes(rpp::strview name);
+
 
 /**
  * @brief Gets all threads associated with a remote process
  */
-int shadow_get_threads(std::vector<DWORD>& out, DWORD processId);
+std::vector<DWORD> shadow_get_threads(DWORD processId);
 /**
  * @brief Gets all threads associated with the current process
  */
-int shadow_get_threads(std::vector<DWORD>& out);
+std::vector<DWORD> shadow_get_threads();
 /**
  * @brief Gets the count of all threads running on a remote process
  */

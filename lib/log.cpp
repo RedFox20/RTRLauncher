@@ -77,8 +77,9 @@ logstream& logsec(const char* secName, rpp::strview text)
     memcpy(Buffer, secName, seclen);
     Buffer[seclen++] = ' ';
 
-    memcpy(Buffer, text.c_str(), text.length());
+    memcpy(Buffer+seclen, text.c_str(), text.length());
     seclen += text.length();
+    Buffer[seclen] = '\0';
 
     logstr(Buffer, seclen);
     return logs;

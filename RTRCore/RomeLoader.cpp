@@ -1,12 +1,11 @@
 #include "RomeLoader.h"
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
 #include <log.h>
 #include <rpp/file_io.h>
 #include <remote_dll_injector.h>
 #include "lzma\LzmaLib.h"
 #include "../Launcher/resource.h"
 #include <memory_map.h>
+#include <shadowlib.h>
 
 static const char secOK[] = "[+] RomeLoader [+]";
 static const char secFF[] = "[!] RomeLoader [!]";
@@ -139,18 +138,31 @@ namespace core
 {
     static bool InjectAttach(const CoreSettings& st, PROCESS_INFORMATION& pi);
 
+    void KillRomeProcesses()
+    {
+        std::vector<ProcessInfo> processes = shadow_get_processes("RomeTW");
+        for (const ProcessInfo& pi : processes)
+        {
+            log("Killing previous RomeTW process: %s %d\n", pi.name.c_str(), pi.pid);
+            HANDLE hnd = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, TRUE, pi.pid);
+            TerminateProcess(hnd, 0);
+        }
+    }
+
     void RomeLoader::Start(const string& cmd, 
-                           const string& gameDir,
+                           const string& workingDir,
                            const CoreSettings& settings)
     {
-        PROCESS_INFORMATION pi = { nullptr };
-        STARTUPINFO si         = { sizeof(si) };
+        KillRomeProcesses();
+
+        STARTUPINFO si = { sizeof(si) };
+        PROCESS_INFORMATION pi = { nullptr, nullptr };
 
         string command = cmd;
-        if (CreateProcessA(nullptr, command.data(), nullptr, nullptr, 0, 
-                           CREATE_SUSPENDED, nullptr, gameDir.c_str(), &si, &pi))
+        if (CreateProcessA(nullptr, command.data(), nullptr, nullptr, 0,
+                           CREATE_SUSPENDED, nullptr, workingDir.c_str(), &si, &pi))
         {
-            // This part applies the patches
+            // This sends the patched EXE to GameEngine DllMain
             if (false)
             {
                 char*  buffPatch = nullptr;
@@ -199,7 +211,8 @@ namespace core
     static bool InjectAttach(const CoreSettings& st, PROCESS_INFORMATION& pi)
     {
         DecompressedData gameEngine = unpack_resource(IDR_DLL_GAMEENGINE);
-        bool useFileInject = ValidateGameEngineDll(gameEngine.size);
+        //bool useFileInject = ValidateGameEngineDll(gameEngine.size);
+        bool useFileInject = false;
         if (st.DebugAttach)
         {
             logsec(secOK, "VS JIT Attach\n");
@@ -241,7 +254,7 @@ namespace core
 
         if (injectSuccess) {
             logsec(secOK, "Launching the game!\n\n");
-            ResumeThread(pi.hThread); // Launch!!!
+            //ResumeThread(pi.hThread); // Launch!!!
             return true;
         }
         return false;
