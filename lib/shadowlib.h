@@ -37,14 +37,14 @@ bool shadow_vquery(void* address, MEMORY_BASIC_INFORMATION& info);
  * @param flags   [MEM_RESERVE|MEM_COMMIT] Memory alloc flags - default MEM_RESERVE|MEM_COMMIT
  */
 void* shadow_valloc(HANDLE process, void* address, DWORD size, DWORD protect = PAGE_READWRITE, 
-						  DWORD flags = MEM_RESERVE | MEM_COMMIT);
+                          DWORD flags = MEM_RESERVE | MEM_COMMIT);
 /**
  * @brief Alloc a memory block for this process
  * @param protect [PAGE_READWRITE] Memory block protection flags - default RW
  * @param flags   [MEM_RESERVE|MEM_COMMIT] Memory alloc flags - default MEM_RESERVE|MEM_COMMIT
  */
 void* shadow_valloc(void* address, DWORD size, DWORD protect = PAGE_READWRITE, 
-						  DWORD flags = MEM_RESERVE | MEM_COMMIT);
+                    DWORD flags = MEM_RESERVE | MEM_COMMIT);
 
 
 
@@ -221,156 +221,6 @@ void shadow_unloadmodules();
  */
 bool shadow_listmodules(std::vector<std::string>& modules);
 
-const char* shadow_getsyserr();
+const char* shadow_getsyserr(long error = 0);
 
-/**
- * @brief Hides your short string value encoded on the stack.
- *        Can be safely stored indefinitely. Max length is 28 chars.
- *        Calling get() unwinds the string for temporary use,
- *        resolving to a const char*
- */
-struct shadow_string
-{
-	static const int SIZE = 32;
-	char str[SIZE];
-
-	template<class... Args> shadow_string(Args... params)
-	{
-		static_assert(sizeof...(Args) <= SIZE, "Max string length is 31");
-		char* ptr = str + sizeof...(Args);
-		expand{ *--ptr = params... }; // reverse magic
-
-		int i = 0;
-		for (; i < sizeof...(Args); ++i)
-			str[i] = str[i] + (42 + i); // rot42+i
-		str[sizeof...(Args)] = '\0' + 42 + i;
-	}
-
-	struct expand { template<typename ...T> __forceinline expand(T...){} };
-
-	struct unwind
-	{
-		char str[SIZE];
-		unwind(const char* src)
-		{
-			for (int i = 0;; ++i)
-				if (!(str[i] = src[i] - (42 + i))) // un rot42+i
-					break;
-		}
-		~unwind()
-		{
-			// ensure string is cleared in memory after use
-			for (int i = 0; i < sizeof str; ++i) str[i] = 0;
-		}
-		operator const char*() const { return str; }
-	};
-
-	//// @brief Unwind the string to a readable form
-	unwind get() const
-	{
-		return unwind(str);
-	}
-};
-
-typedef shadow_string sstr;
-
-
-struct shadow_string2
-{
-	static const int SIZE = 32;
-	char str[SIZE];
-//0x2d2c2b2a
-//0x312f2d2b
-//0x35322f2c
-//0x3935312d
-//0x3d38332e
-//0x413b352f
-//0x453e3730
-//0x49413931
-	typedef unsigned int uint;
-	__forceinline shadow_string2()
-	{
-		*(uint*)str = 0 + 0x2d2c2b2a;
-	}
-	__forceinline shadow_string2(uint a)
-	{
-		uint* i = (uint*)str;
-		i[0] = a + 0x2d2c2b2a, i[1] = 0 + 0x312f2d2b;
-	}
-	__forceinline shadow_string2(uint a, uint b)
-	{
-		uint* i = (uint*)str;
-		i[0] = a + 0x2d2c2b2a, i[1] = b + 0x312f2d2b;
-		i[2] = 0 + 0x35322f2c;
-	}
-	__forceinline shadow_string2(uint a, uint b, uint c)
-	{
-		uint* i = (uint*)str;
-		i[0] = a + 0x2d2c2b2a, i[1] = b + 0x312f2d2b;
-		i[2] = c + 0x35322f2c, i[3] = 0 + 0x3935312d;
-	}
-	__forceinline shadow_string2(uint a, uint b, uint c, uint d)
-	{
-		uint* i = (uint*)str;
-		i[0] = a + 0x2d2c2b2a, i[1] = b + 0x312f2d2b;
-		i[2] = c + 0x35322f2c, i[3] = d + 0x3935312d;
-		i[4] = 0 + 0x3d38332e;
-	}
-	__forceinline shadow_string2(uint a, uint b, uint c, uint d,
-								 uint e)
-	{
-		uint* i = (uint*)str;
-		i[0] = a + 0x2d2c2b2a, i[1] = b + 0x312f2d2b;
-		i[2] = c + 0x35322f2c, i[3] = d + 0x3935312d;
-		i[4] = e + 0x3d38332e, i[5] = 0 + 0x413b352f;
-	}
-	__forceinline shadow_string2(uint a, uint b, uint c, uint d,
-								 uint e, uint f)
-	{
-		uint* i = (uint*)str;
-		i[0] = a + 0x2d2c2b2a, i[1] = b + 0x312f2d2b;
-		i[2] = c + 0x35322f2c, i[3] = d + 0x3935312d;
-		i[4] = e + 0x3d38332e, i[5] = f + 0x413b352f;
-		i[6] = 0 + 0x453e3730;
-	}
-	__forceinline shadow_string2(uint a, uint b, uint c, uint d,
-								 uint e, uint f, uint g)
-	{
-		uint* i = (uint*)str;
-		i[0] = a + 0x2d2c2b2a, i[1] = b + 0x312f2d2b;
-		i[2] = c + 0x35322f2c, i[3] = d + 0x3935312d;
-		i[4] = e + 0x3d38332e, i[5] = f + 0x413b352f;
-		i[6] = g + 0x453e3730, i[7] = 0 + 0x49413931;
-	}
-//0x2d2c2b2a
-//0x312f2d2b
-//0x35322f2c
-//0x3935312d
-//0x3d38332e
-//0x413b352f
-//0x453e3730
-//0x49413931
-	struct unwind
-	{
-		char str[SIZE];
-		unwind(const char* src)
-		{
-			uint* a = (uint*)str, *b = (uint*)src;
-			uint base = 0x2d2c2b2a;
-			for (int i = 0; i < 8; ++i, base += 0x04030201)
-				a[i] = _byteswap_ulong(b[i] - base);
-		}
-		~unwind()
-		{
-			// ensure string is cleared in memory after use
-			for (int i = 0; i < sizeof str; ++i) str[i] = 0;
-		}
-		operator const char*() const { return str; }
-	};
-	unwind get() const
-	{
-		return unwind(str);
-	}
-};
-typedef shadow_string2 sstr2;
 

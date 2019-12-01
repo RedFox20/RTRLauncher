@@ -150,13 +150,17 @@ namespace core
         if (CreateProcessA(nullptr, command.data(), nullptr, nullptr, 0, 
                            CREATE_SUSPENDED, nullptr, gameDir.c_str(), &si, &pi))
         {
-            char*  buffPatch = nullptr;
-            size_t sizePatch = load_patches(buffPatch);
+            // This part applies the patches
+            if (false)
+            {
+                char*  buffPatch = nullptr;
+                size_t sizePatch = load_patches(buffPatch);
 
-            memory_map mmap = memory_map::create("RTRGameEngine", sizePatch);
-            map_view view = mmap.create_view();
-            memcpy(view, buffPatch, sizePatch);
-            free(buffPatch);
+                memory_map mmap = memory_map::create("RTRGameEngine", sizePatch);
+                map_view view = mmap.create_view();
+                memcpy(view, buffPatch, sizePatch);
+                free(buffPatch);
+            }
 
             log("RTW.MainThreadId: %d\n", pi.dwThreadId);
 
@@ -225,10 +229,11 @@ namespace core
             else
             {
                 // for non-debugger inject, we use the internal DLL resource
-                remote_dll_injector injector = remote_dll_injector(gameEngine.data);
-                if (injectSuccess = injector) {
+                remote_dll_injector injector = remote_dll_injector{gameEngine.data};
+                injectSuccess = (bool)injector;
+                if (injectSuccess) {
                     logsec(secOK, "Injecting RESOURCE GameEngine.dll...\n");
-                    injectSuccess = injector.inject_dllimage(pi.hProcess);
+                    injectSuccess = (bool)injector.inject_dllimage(pi.hProcess);
                 }
                 else logsec(secFF, "Error: GameEngine.dll embedded resource not found!");
             }

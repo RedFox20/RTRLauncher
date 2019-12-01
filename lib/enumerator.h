@@ -7,13 +7,15 @@
 
 template<class T> struct _enum
 {
-	static const rpp::strview data[];
-	static const int maxValue;
+    static const rpp::strview data[];
+    static const int maxValue;
 };
+
 template<class T> struct _enum_unknown
 {
-	static const rpp::strview value; // unknown
+    static const rpp::strview value; // unknown
 };
+
 template<> const rpp::strview _enum_unknown<void>::value = "unknown";
 
 
@@ -21,21 +23,22 @@ template<> const rpp::strview _enum_unknown<void>::value = "unknown";
 template<class T> T enum_parse(const rpp::strview& tok)
 {
 
-	const rpp::strview* start = _enum<T>::data;
-	const rpp::strview* end = start + sizeof(_enum<T>::data) / sizeof(rpp::strview);
+    const rpp::strview* start = _enum<T>::data;
+    const rpp::strview* end = start + sizeof(_enum<T>::data) / sizeof(rpp::strview);
 
-	const char* str  = tok.c_str();
-	const int strlen = tok.length();
+    const char* str  = tok.c_str();
+    const int strlen = tok.length();
 
-	//// @todo Perhaps something better than linear search would be nice?
-	for (const rpp::strview* p = start; p != end; ++p)
-		if (p->equals(str, strlen))
-			return T(p - start);
-	return T(-1); // unknown value (-1)
+    //// @todo Perhaps something better than linear search would be nice?
+    for (const rpp::strview* p = start; p != end; ++p)
+        if (p->equals(str, strlen))
+            return T(p - start);
+    return T(-1); // unknown value (-1)
 }
+
 template<class T> void enum_parse(rpp::strview token, T& out)
 {
-	out = enum_parse<T>(token);
+    out = enum_parse<T>(token);
 }
 
 
@@ -43,16 +46,16 @@ template<class T> void enum_parse(rpp::strview token, T& out)
 template<class T> rpp::strview enum_str(T value)
 {
     int index = static_cast<int>(value);
-	return (0 <= index && index <= _enum<T>::maxValue) 
-		? _enum<T>::data[index] 
-		: _enum_unknown<void>::value;
+    return (0 <= index && index <= _enum<T>::maxValue) 
+        ? _enum<T>::data[index] 
+        : _enum_unknown<void>::value;
 }
 template<class T> const char* enum_cstr(T value)
 {
     int index = static_cast<int>(value);
-	return (0 <= index && index <= _enum<T>::maxValue) 
-		? _enum<T>::data[index].c_str()
-		: _enum_unknown<void>::value.c_str();
+    return (0 <= index && index <= _enum<T>::maxValue) 
+        ? _enum<T>::data[index].c_str()
+        : _enum_unknown<void>::value.c_str();
 }
 
 
@@ -76,9 +79,9 @@ template<class T> const char* enum_cstr(T value)
          9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
 
 
-#define ENUM_STR__(func, argc, ...)	func ## argc(ENUM_EXPAND(__VA_ARGS__))
-#define ENUM_STR_(func, argc, ...)	ENUM_STR__(func, argc, __VA_ARGS__)
-#define ENUM_STR(...)				ENUM_STR_(ENUM_STR, ENUM_NARG(__VA_ARGS__), __VA_ARGS__)
+#define ENUM_STR__(func, argc, ...) func ## argc(ENUM_EXPAND(__VA_ARGS__))
+#define ENUM_STR_(func, argc, ...)  ENUM_STR__(func, argc, __VA_ARGS__)
+#define ENUM_STR(...)               ENUM_STR_(ENUM_STR, ENUM_NARG(__VA_ARGS__), __VA_ARGS__)
 #define ENUM_STR0()
 #define ENUM_STR1(a)			#a
 #define ENUM_STR2(a,b)			#a, #b
@@ -150,17 +153,17 @@ template<class T> const char* enum_cstr(T value)
 
 
 #define ENUM_BASE_(Type, ...) \
-	template<> const int _enum<Type>::maxValue = (int)Type::Type##__last - 1; \
-	template<> const rpp::strview _enum<Type>::data[] = {  ENUM_STR(__VA_ARGS__) };
+    template<> const int _enum<Type>::maxValue = (int)Type::Type##__last - 1; \
+    template<> const rpp::strview _enum<Type>::data[] = {  ENUM_STR(__VA_ARGS__) };
 
 #define ENUM_BASE(Type, DataType, ...) \
-	enum Type : DataType { Type##_Unknown=-1, __VA_ARGS__, Type##__last }; ENUM_BASE_(Type, __VA_ARGS__)
+    enum Type : DataType { Type##_Unknown=-1, __VA_ARGS__, Type##__last }; ENUM_BASE_(Type, __VA_ARGS__)
 
 #define ENUM_CLASS_BASE(Type, DataType, ...) \
-	enum class Type : DataType { Type##_Unknown=-1, ## __VA_ARGS__, Type##__last }; ENUM_BASE_(Type, __VA_ARGS__)
+    enum class Type : DataType { Type##_Unknown=-1, ## __VA_ARGS__, Type##__last }; ENUM_BASE_(Type, __VA_ARGS__)
 
 #define ENUM_PREFIXED(Type, Prefix, DataType, ...) \
-	enum Type : DataType { Type##_Unknown=-1, ENUM_PREFIX(Prefix, __VA_ARGS__), Type##__last }; ENUM_BASE_(Type, __VA_ARGS__)
+    enum Type : DataType { Type##_Unknown=-1, ENUM_PREFIX(Prefix, __VA_ARGS__), Type##__last }; ENUM_BASE_(Type, __VA_ARGS__)
 
 /**
  * @brief Creates an enum that can be automatically stringified with enum_str<T> or parsed with enum_parse<T>
@@ -168,12 +171,12 @@ template<class T> const char* enum_cstr(T value)
  * @usage MyEnum value    = enum_parse<MyEnum>("Value1");
  * @usage const char* str = enum_str(Value1);
  */
-#define Enum(Type, ...)				ENUM_BASE(Type, int, __VA_ARGS__)
-#define EnumByte(Type, ...)			ENUM_BASE(Type, char, __VA_ARGS__)
-#define EnumShort(Type, ...)		ENUM_BASE(Type, short, __VA_ARGS__)
-#define EnumClass(Type, ...)		ENUM_CLASS_BASE(Type, int, __VA_ARGS__)
-#define EnumClassByte(Type, ...)	ENUM_CLASS_BASE(Type, char, __VA_ARGS__)
-#define EnumClassShort(Type, ...)	ENUM_CLASS_BASE(Type, short, __VA_ARGS__)
+#define Enum(Type, ...)            ENUM_BASE(Type, int, __VA_ARGS__)
+#define EnumByte(Type, ...)        ENUM_BASE(Type, char, __VA_ARGS__)
+#define EnumShort(Type, ...)       ENUM_BASE(Type, short, __VA_ARGS__)
+#define EnumClass(Type, ...)       ENUM_CLASS_BASE(Type, int, __VA_ARGS__)
+#define EnumClassByte(Type, ...)   ENUM_CLASS_BASE(Type, char, __VA_ARGS__)
+#define EnumClassShort(Type, ...)  ENUM_CLASS_BASE(Type, short, __VA_ARGS__)
 
 /**
  * @brief Prefixes enum values with the chosen prefix, while leaving strings intact
@@ -181,6 +184,6 @@ template<class T> const char* enum_cstr(T value)
  * @usage MyEnum value = enum_parse<MyEnum>("Value1");
  * @usage const char* str = enum_str(MEValue1);
  */
-#define EnumPrefix(Type, Prefix, ...)		ENUM_PREFIXED(Type, Prefix, int, __VA_ARGS__) 
-#define EnumPrefixByte(Type, Prefix, ...)	ENUM_PREFIXED(Type, Prefix, char, __VA_ARGS__)
-#define EnumPrefixShort(Type, Prefix, ...)	ENUM_PREFIXED(Type, Prefix, short, __VA_ARGS__)
+#define EnumPrefix(Type, Prefix, ...)      ENUM_PREFIXED(Type, Prefix, int, __VA_ARGS__) 
+#define EnumPrefixByte(Type, Prefix, ...)  ENUM_PREFIXED(Type, Prefix, char, __VA_ARGS__)
+#define EnumPrefixShort(Type, Prefix, ...) ENUM_PREFIXED(Type, Prefix, short, __VA_ARGS__)
