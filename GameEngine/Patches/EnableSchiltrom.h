@@ -10,7 +10,9 @@ static void EnableSchiltrom(RomeExeVersion ver)
     {
         default: ;
         case RomeTW_1_5:    address = 0x008D4964; break;
-        case RomeBI_1_5:    address = 0x008D4964; break;
+        case RomeTW_1_5_1:  address = 0x008D4964; break;
+        case RomeBI_1_6:    address = 0x008D4964; break;
+        case RomeBI_1_6_1:  address = 0x008D4964; break;
         case RomeALX_1_9:   address = 0x008D4964; break;
         case RomeALX_1_9_1: address = 0x008D4964; break;
     }

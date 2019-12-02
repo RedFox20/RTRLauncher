@@ -6,10 +6,12 @@
  */
 enum RomeExeVersion
 {
-    RomeTW_1_5,
-    RomeBI_1_5,
-    RomeALX_1_9,
-    RomeALX_1_9_1, // Steam
+    RomeTW_1_5,   // RTW 1.5
+    RomeTW_1_5_1, // RomeTW Gold (Steam)
+    RomeBI_1_6,   // BI 1.6
+    RomeBI_1_6_1, // RomeTW Gold BI (Steam)
+    RomeALX_1_9,  // ALX 1.9
+    RomeALX_1_9_1, // ALX Steam
 };
 
 /**

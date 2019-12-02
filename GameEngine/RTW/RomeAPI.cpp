@@ -8,9 +8,11 @@ RTWGameSettings* GetSettingsPointer(RomeExeVersion version)
     switch (version)
     {
         default:
-        case RomeTW_1_5:  return *reinterpret_cast<RTWGameSettings**>(0x273845C);
-        case RomeBI_1_5:  return *reinterpret_cast<RTWGameSettings**>(0x273845C);
-        case RomeALX_1_9: return *reinterpret_cast<RTWGameSettings**>(0x273845C);
+        case RomeTW_1_5:    return *reinterpret_cast<RTWGameSettings**>(0x273845C);
+        case RomeTW_1_5_1:  return *reinterpret_cast<RTWGameSettings**>(0x273845C);
+        case RomeBI_1_6:    return *reinterpret_cast<RTWGameSettings**>(0x273845C);
+        case RomeBI_1_6_1:  return *reinterpret_cast<RTWGameSettings**>(0x273845C);
+        case RomeALX_1_9:   return *reinterpret_cast<RTWGameSettings**>(0x273845C);
         case RomeALX_1_9_1: return *reinterpret_cast<RTWGameSettings**>(0x273845C);
     }
 }
