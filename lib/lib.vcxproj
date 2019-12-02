@@ -83,7 +83,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="enumerator.h" />
     <ClInclude Include="fmt\include\fmt\chrono.h" />
     <ClInclude Include="fmt\include\fmt\color.h" />
     <ClInclude Include="fmt\include\fmt\compile.h" />
