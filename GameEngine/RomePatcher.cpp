@@ -305,8 +305,9 @@
                 *(float*)(0x0FC3BC0) = 100.0f //max RTS
                 *(float*)(0x0FC3B08) = 1.0f /// min TW/RTS
                 write_jne((BYTE*)0x090D15B, 0x11); /// prevents TW camera from going below min value
-                write_jne((BYTE*)0x095B45D, 0x11); /// needs RTS patch to prevent height from overflowing on max value
-                write_jne((BYTE*)0x095B45F, 0x11);       
+                write_jne((BYTE*)0x095B45D, 0x11);
+                write_jne((BYTE*)0x095B45F, 0x11);
+                memset((BYTE*)0x090F34F, 0x90, 5; /// prevents RTS camera from overflowing on max value
             }
             // staging atm. so set to false
             if (false)
