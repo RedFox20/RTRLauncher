@@ -101,7 +101,6 @@
     <ClInclude Include="io\console.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="memory_map.h" />
-    <ClInclude Include="process_fork.h" />
     <ClInclude Include="process_info.h" />
     <ClInclude Include="process_loader.h" />
     <ClInclude Include="ReCpp\rpp\binary_serializer.h" />
@@ -138,7 +137,6 @@
     <ClCompile Include="io\console.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="memory_map.cpp" />
-    <ClCompile Include="process_fork.cpp" />
     <ClCompile Include="process_info.cpp" />
     <ClCompile Include="process_loader.cpp" />
     <ClCompile Include="ReCpp\rpp\binary_stream.cpp" />

@@ -21,9 +21,6 @@
     <ClInclude Include="process_info.h">
       <Filter>process_hacking</Filter>
     </ClInclude>
-    <ClInclude Include="process_fork.h">
-      <Filter>process_hacking</Filter>
-    </ClInclude>
     <ClInclude Include="memory_map.h">
       <Filter>process_hacking</Filter>
     </ClInclude>
@@ -144,9 +141,6 @@
       <Filter>process_hacking</Filter>
     </ClCompile>
     <ClCompile Include="process_info.cpp">
-      <Filter>process_hacking</Filter>
-    </ClCompile>
-    <ClCompile Include="process_fork.cpp">
       <Filter>process_hacking</Filter>
     </ClCompile>
     <ClCompile Include="memory_map.cpp">

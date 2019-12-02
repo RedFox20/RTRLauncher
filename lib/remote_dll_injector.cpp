@@ -44,14 +44,6 @@ void remote_dll_injector::enable_debug_privilege()
     else logsec(secFF, "CURRENT_PROCESS Debug Privilege SET FAILED\n");
 }
 
-bool validate_injected_code(HANDLE process, PCHAR codeAddress, void* referenceCode, DWORD codeSize)
-{
-    std::vector<CHAR> buffer; buffer.resize(codeSize);
-    shadow_vread(process, codeAddress, buffer.data(), codeSize);
-    return memcmp(buffer.data(), referenceCode, codeSize) == 0;
-}
-
-
 void remote_dll_injector::inject_dllfile(void* targetProcessHandle, const char* filename)
 {
     // Set DEBUG privilege ENABLED for the Current process to get sufficient rights
