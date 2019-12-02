@@ -288,14 +288,25 @@
             }
             log("    ENABLE    extended_camera\n"); /// for vanilla steam exe    
             {
-            *(uint32_t*)(0x017B1C44) = 0; ///camera_restriction_set
-            *(uint32_t*)(0x17B1C40) = 0; /// restrict camera
-            *(float*)(0x01019DC4) = 100.0f /// max TW
+               *(uint32_t*)(0x017B1C44) = 0; ///camera_restriction_set
+               *(uint32_t*)(0x17B1C40) = 0; /// restrict camera
+               *(float*)(0x01019DC4) = 100.0f /// max TW
             *(float*)(0x01019DC8) = 100.0f ///max RTS
             *(float*)(0x01019DB8) = 1.2f /// min TW/RTS
             write_jne((BYTE*)0x095B469, 0x11); /// prevents TW camera from going below min value
             write_jne((BYTE*)0x095B46B, 0x11);
             write_jne((BYTE*)0x095B46D, 0x11);            
+            }
+            log("   ENABLE  extended_camera_v1.5\n"); /// for vanilla nocd exe
+            {
+                *(uint32_t*)(0x150F434) = 0; ///camera_restriction_set
+                *(uint32_t*)(0x150F430) = 0; ///restrict camera
+                *(float*)(0x0FC3B10) = 100.0f /// max TW
+                *(float*)(0x0FC3BC0) = 100.0f //max RTS
+                *(float*)(0x0FC3B08) = 1.0f /// min TW/RTS
+                write_jne((BYTE*)0x090D15B, 0x11); /// prevents TW camera from going below min value
+                write_jne((BYTE*)0x095B45D, 0x11); /// needs RTS patch to prevent height from overflowing on max value
+                write_jne((BYTE*)0x095B45F, 0x11);       
             }
             // staging atm. so set to false
             if (false)
