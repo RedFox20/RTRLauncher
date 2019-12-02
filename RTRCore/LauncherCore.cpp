@@ -82,6 +82,7 @@ namespace core
 
     GameInfo LauncherCore::GetTargetGameInfo() const
     {
+        // Pick first file that exists:
         for (GameInfo info : std::initializer_list<GameInfo>{
             { GameVersion::RomeALX, GameDir, "RomeTW-ALX.exe" },
             { GameVersion::RomeBI,  GameDir, "RomeTW-BI.exe"  },
@@ -152,9 +153,7 @@ namespace core
         //for (auto& path : modules)
         //	log("loaded: %s\n", path.c_str());
         
-
-        string cmd = Game.FullPath + " " + commandLine;
-        RomeLoader::Start(cmd, GameDir, Settings);
+        LoadAndInjectRomeProcess(Game.FullPath, commandLine, GameDir, Settings);
     }
 
     string LauncherCore::GetRTWCommandLine() const

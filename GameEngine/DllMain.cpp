@@ -20,14 +20,24 @@ void onProcessAttach(HINSTANCE hinstDLL)
     else             log("[*!*]         File Inject          [*!*]\n");
     log(  "[*!*] Welcome to GameEngine %.2f [*!*]\n", APIVersion);
 
+    log(  "[*!*]    Loading Launch Params   [*!*]\n");
+
+    GameEngineDllParams params;
     if (memory_map mmap = memory_map::open("RTRGameEngine"))
     {
-        map_view view = mmap.create_view();
-        auto* params = view.get<GameEngineDllParams>();
+        mmap.create_view().read_struct(params);
+        log("  Launcher.Title:      %s\n", params.Title);
+        log("  Launcher.ModName:    %s\n", params.ModName);
+        log("  Launcher.Executable: %s\n", params.Executable);
+        log("  Launcher.Arguments:  %s\n", params.Arguments);
+    }
+    else
+    {
+        log("  Failed to load Launch Params\n");
     }
 
     log(  "[*!*]     Initializing Patch     [*!*]\n");
-    Game.Initialize(PVOID(0x00400000)); // initialize game engine and patch rome
+    Game.Initialize(params.Executable, PVOID(0x00400000)); // initialize game engine and patch rome
 
     log("\n[*!*]       Launching Game       [*!*]\n");
     Game.LaunchRome();

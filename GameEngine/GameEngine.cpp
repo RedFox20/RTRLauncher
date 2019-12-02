@@ -7,11 +7,11 @@
 
 /*extern*/ GameEngine Game;
 
-void GameEngine::Initialize(void* exeModule)
+void GameEngine::Initialize(const char* exePath, void* exeModule)
 {
     rpp::register_segfault_tracer(); // WARNING: Don't use `noexcept` with this!
 
-    Version = RunPatcher(Game, exeModule);
+    Version = RunPatcher(Game, exePath, exeModule);
     RTW::Initialize(Version);
 }
 

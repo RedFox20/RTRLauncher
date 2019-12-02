@@ -1,5 +1,5 @@
 #include "process_info.h"
-
+#include "shadowlib.h"
 
     void* unlocked_section::find(const void* start, const void* end, const void* data, int numBytes)
     {
@@ -20,9 +20,9 @@
     process_info::process_info(void* moduleHandle)
     {
         Process = GetCurrentProcess();
-        Image = PCHAR(moduleHandle ? moduleHandle : GetModuleHandleW(0));
+        Image = PCHAR(moduleHandle ? moduleHandle : GetModuleHandleW(nullptr));
         Dos = reinterpret_cast<IMAGE_DOS_HEADER*>(Image);
-        Nt = reinterpret_cast<IMAGE_NT_HEADERS*>(Image + Dos->e_lfanew);
+        Nt = get_nt_headers(HMODULE(Image));
         ImageBase = PCHAR(Nt->OptionalHeader.ImageBase);
 
         // read all section headers

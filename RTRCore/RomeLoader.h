@@ -3,10 +3,13 @@
 
 namespace core
 {
-    struct RomeLoader
-    {
-        static void Start(const string& cmd, 
-                          const string& workingDir,
-                          const CoreSettings& settings);
-    };
+    /**
+     * This loads the RomeTW executable process
+     * and injects GameEngine.dll along with necessary injector parameters
+     */
+    void LoadAndInjectRomeProcess(
+        const string& executable,
+        const string& arguments,
+        const string& workingDir,
+        const CoreSettings& settings);
 }

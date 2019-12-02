@@ -8,5 +8,5 @@
 /**
  * Patches all RTW modules. You should run this after GameEngine has been initialized.
  */
-RomeExeVersion RunPatcher(const GameEngine& game, void* exeModule);
+RomeExeVersion RunPatcher(const GameEngine& game, const char* exePath, void* exeModule);
 

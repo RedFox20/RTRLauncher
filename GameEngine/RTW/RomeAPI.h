@@ -14,6 +14,8 @@ enum RomeExeVersion
     RomeALX_1_9_1, // ALX Steam
 };
 
+const char* to_string(RomeExeVersion ver);
+
 /**
  * Some game settings struct for RomeTW,
  * @todo The layout might be different for different RomeExeVersion's

@@ -16,6 +16,27 @@ struct map_view
     map_view& operator=(map_view&& mv);
     ~map_view();
 
+    void write_bytes(const void* inBytes, int size);
+
+    template<class T> void write_struct(const T& podStruct)
+    {
+        write_bytes(&podStruct, sizeof(T));
+    }
+
+    void read_bytes(void* outBytes, int size);
+
+    template<class T> void read_struct(T& outPodStruct)
+    {
+        read_bytes(&outPodStruct, sizeof(T));
+    }
+
+    template<class T> T read_struct()
+    {
+        T podStruct;
+        read_bytes(&podStruct, sizeof(T));
+        return podStruct;
+    }
+
 private:
 
     map_view(const map_view& lval) = default;

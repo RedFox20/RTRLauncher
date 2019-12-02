@@ -17,6 +17,20 @@ RTWGameSettings* GetSettingsPointer(RomeExeVersion version)
     }
 }
 
+const char* to_string(RomeExeVersion ver)
+{
+    switch (ver)
+    {
+        case RomeTW_1_5:    return "RomeTW 1.5";
+        case RomeTW_1_5_1:  return "RomeTW 1.5.1 (Steam)";
+        case RomeBI_1_6:    return "RomeBI 1.6";
+        case RomeBI_1_6_1:  return "RomeBI 1.6.1 (Steam)";
+        case RomeALX_1_9:   return "RomeALX 1.9";
+        case RomeALX_1_9_1: return "RomeALX 1.9.1 (Steam)";
+    }
+    return "RomeTW (unknown version)";
+}
+
 void RTW::Initialize(RomeExeVersion version)
 {
     Version = version;

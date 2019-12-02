@@ -9,7 +9,7 @@ struct GameEngine
     RomeExeVersion Version;
     void* APIThread = nullptr;
 
-    void Initialize(void* exeModule);
+    void Initialize(const char* exePath, void* exeModule);
 
     /**
      * Starts RomeTW main thread
