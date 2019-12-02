@@ -95,7 +95,11 @@
                 abs_jmp(0x008D479D); // jump to end of the IF chain
         }
     }
-
+    static void write_jne(BYTE* dst, int8_t short_offset)
+    {
+        dst[0] = 0x75; // opcode JNE short imm8
+        dst[1] = (BYTE)short_offset; // jump offset
+    }
 
 
     struct ParseBuffer
@@ -282,7 +286,17 @@
                 ///.text:008AC6CA  jnz     loc_8AD479 ; 6 bytes
                 write_patchcall(0x008AC6C5, 11, SmFactionsHorde_AllChecks2);
             }
-
+            log("    ENABLE    extended_camera\n"); /// for vanilla steam exe    
+            {
+            *(uint32_t*)(0x017B1C44) = 0; ///camera_restriction_set
+            *(uint32_t*)(0x17B1C40) = 0; /// restrict camera
+            *(float*)(0x01019DC4) = 100.0f /// max TW
+            *(float*)(0x01019DC8) = 100.0f ///max RTS
+            *(float*)(0x01019DB8) = 1.2f /// min TW/RTS
+            write_jne((BYTE*)0x095B469, 0x11); /// prevents TW camera from going below min value
+            write_jne((BYTE*)0x095B46B, 0x11);
+            write_jne((BYTE*)0x095B46D, 0x11);            
+            }
             // staging atm. so set to false
             if (false)
             {
