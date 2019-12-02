@@ -11,6 +11,12 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="src\Patches">
+      <UniqueIdentifier>{d2111da8-25a8-42c3-9c65-ec3a38c00f8f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\RTW">
+      <UniqueIdentifier>{07a3f701-bed9-45b1-86d0-7ce4aa90d22d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DllMain.cpp">
@@ -67,11 +73,14 @@
     <ClCompile Include="distorm\wstring.c">
       <Filter>distorm</Filter>
     </ClCompile>
-    <ClCompile Include="RomeAPI.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="MemoryModule.c">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="RTW\RomeAPI.cpp">
+      <Filter>src\RTW</Filter>
+    </ClCompile>
+    <ClCompile Include="Patches\ExtendRegionsLimit.cpp">
+      <Filter>src\Patches</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -86,9 +95,6 @@
     </ClInclude>
     <ClInclude Include="Detours\detver.h">
       <Filter>Detours</Filter>
-    </ClInclude>
-    <ClInclude Include="RtwTypes.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="ASM.h">
       <Filter>src</Filter>
@@ -126,10 +132,40 @@
     <ClInclude Include="distorm\x86defs.h">
       <Filter>distorm</Filter>
     </ClInclude>
-    <ClInclude Include="RomeAPI.h">
+    <ClInclude Include="MemoryModule.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="MemoryModule.h">
+    <ClInclude Include="Patches\PatchUtils.h">
+      <Filter>src\Patches</Filter>
+    </ClInclude>
+    <ClInclude Include="Patches\EnableSchiltrom.h">
+      <Filter>src\Patches</Filter>
+    </ClInclude>
+    <ClInclude Include="Patches\EnableUnitCanSwim.h">
+      <Filter>src\Patches</Filter>
+    </ClInclude>
+    <ClInclude Include="Patches\EnableBiggerUnitSize.h">
+      <Filter>src\Patches</Filter>
+    </ClInclude>
+    <ClInclude Include="Patches\EnableUnitCanHorde.h">
+      <Filter>src\Patches</Filter>
+    </ClInclude>
+    <ClInclude Include="RTW\RtwTypes.h">
+      <Filter>src\RTW</Filter>
+    </ClInclude>
+    <ClInclude Include="RTW\RomeAPI.h">
+      <Filter>src\RTW</Filter>
+    </ClInclude>
+    <ClInclude Include="Patches\EnableExtendedCamera.h">
+      <Filter>src\Patches</Filter>
+    </ClInclude>
+    <ClInclude Include="Patches\EnableModdedSkyClouds.h">
+      <Filter>src\Patches</Filter>
+    </ClInclude>
+    <ClInclude Include="Patches\ExtendRegionsLimit.h">
+      <Filter>src\Patches</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngineDllParams.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

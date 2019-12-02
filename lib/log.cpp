@@ -93,6 +93,12 @@ logstream& logput(const char* s)
     return logs;
 }
 
+void logflush()
+{
+    if (LogFile)
+        FlushFileBuffers(LogFile);
+}
+
 void show_message_box(rpp::strview message, rpp::strview title)
 {
     MessageBoxA(nullptr, message.c_str(), title.c_str(), MB_OK);

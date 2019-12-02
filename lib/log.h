@@ -20,6 +20,7 @@ logstream& logsec(const char* secName, const char* fmt, ...);
 logstream& logsec(const char* secName, rpp::strview text);
 logstream& logput(const char* s);
 
+void logflush();
 
 
 inline logstream& _strmlog(char value)

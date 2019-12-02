@@ -40,12 +40,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)lib;$(SolutionDir)\lib\ReCpp;$(SolutionDir)\lib\fmt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)lib;$(SolutionDir)\lib\ReCpp;$(SolutionDir)\lib\fmt\include;$(ProjectDir);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)ALX\RTR\</OutDir>
     <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)lib;$(SolutionDir)\lib\ReCpp;$(SolutionDir)\lib\fmt\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)lib;$(SolutionDir)\lib\ReCpp;$(SolutionDir)\lib\fmt\include;$(ProjectDir);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)ALX\RTR\</OutDir>
     <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
@@ -65,7 +65,8 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
     <PostBuildEvent>
-      <Command>$(ProjectDir)/patchzipper.exe $(TargetPath)</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -86,7 +87,8 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
     <PostBuildEvent>
-      <Command>$(ProjectDir)/patchzipper.exe $(TargetPath)</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -113,11 +115,12 @@
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="MemoryModule.c" />
-    <ClCompile Include="RomeAPI.cpp" />
+    <ClCompile Include="Patches\ExtendRegionsLimit.cpp" />
     <ClCompile Include="RomePatcher.cpp">
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreprocessToFile>
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</PreprocessToFile>
     </ClCompile>
+    <ClCompile Include="RTW\RomeAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ASM.h" />
@@ -135,10 +138,19 @@
     <ClInclude Include="distorm\wstring.h" />
     <ClInclude Include="distorm\x86defs.h" />
     <ClInclude Include="GameEngine.h" />
+    <ClInclude Include="GameEngineDllParams.h" />
     <ClInclude Include="MemoryModule.h" />
-    <ClInclude Include="RomeAPI.h" />
+    <ClInclude Include="Patches\EnableBiggerUnitSize.h" />
+    <ClInclude Include="Patches\EnableExtendedCamera.h" />
+    <ClInclude Include="Patches\EnableModdedSkyClouds.h" />
+    <ClInclude Include="Patches\EnableSchiltrom.h" />
+    <ClInclude Include="Patches\EnableUnitCanHorde.h" />
+    <ClInclude Include="Patches\EnableUnitCanSwim.h" />
+    <ClInclude Include="Patches\ExtendRegionsLimit.h" />
+    <ClInclude Include="Patches\PatchUtils.h" />
     <ClInclude Include="RomePatcher.h" />
-    <ClInclude Include="RtwTypes.h" />
+    <ClInclude Include="RTW\RomeAPI.h" />
+    <ClInclude Include="RTW\RtwTypes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

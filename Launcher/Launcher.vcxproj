@@ -178,12 +178,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\RTR\GameEngine.dll.pz" />
-    <None Include="..\patch.bin" />
-    <None Include="..\patch0.bin" />
-    <None Include="..\patch1.bin" />
-    <None Include="..\patch2.bin" />
-    <None Include="..\patch3.bin" />
     <CopyFileToFolders Include="res\launcher.cfg">
       <FileType>Document</FileType>
       <DeploymentContent>true</DeploymentContent>

@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
 
-typedef unsigned char byte;
-typedef unsigned int  uint;
+using byte = unsigned char;
+using uint = unsigned int;
 
 /**
  * This utility class automatically replaces calls such as

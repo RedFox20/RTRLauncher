@@ -61,26 +61,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\RTR\GameEngine.dll.pz">
-      <Filter>res</Filter>
-    </None>
-    <None Include="..\patch.bin">
-      <Filter>res</Filter>
-    </None>
-    <None Include="..\patch0.bin">
-      <Filter>res</Filter>
-    </None>
-    <None Include="..\patch1.bin">
-      <Filter>res</Filter>
-    </None>
-    <None Include="..\patch2.bin">
-      <Filter>res</Filter>
-    </None>
-    <None Include="..\patch3.bin">
-      <Filter>res</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <CopyFileToFolders Include="res\launcher.cfg">
       <Filter>res</Filter>
     </CopyFileToFolders>

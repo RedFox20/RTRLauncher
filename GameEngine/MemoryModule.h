@@ -41,25 +41,25 @@ typedef void *HCUSTOMMODULE;
 extern "C" {
 #endif
 
-	typedef HCUSTOMMODULE (*CustomLoadLibraryFunc)(LPCSTR, void *);
-	typedef FARPROC (*CustomGetProcAddressFunc)(HCUSTOMMODULE, LPCSTR, void *);
-	typedef void (*CustomFreeLibraryFunc)(HCUSTOMMODULE, void *);
-	typedef int (WINAPI *ExeEntryProc)(void);
+    typedef HCUSTOMMODULE (*CustomLoadLibraryFunc)(LPCSTR, void *);
+    typedef FARPROC (*CustomGetProcAddressFunc)(HCUSTOMMODULE, LPCSTR, void *);
+    typedef void (*CustomFreeLibraryFunc)(HCUSTOMMODULE, void *);
+    typedef int (WINAPI *ExeEntryProc)(void);
 
-	typedef struct {
-		PIMAGE_NT_HEADERS headers;
-		unsigned char *codeBase;
-		HCUSTOMMODULE *modules;
-		int numModules;
-		int initialized;
-		int isDLL;
-		int isRelocated;
-		CustomLoadLibraryFunc loadLibrary;
-		CustomGetProcAddressFunc getProcAddress;
-		CustomFreeLibraryFunc freeLibrary;
-		void *userdata;
-		ExeEntryProc exeEntry;
-	} MEMORYMODULE, *PMEMORYMODULE;
+    typedef struct {
+        PIMAGE_NT_HEADERS headers;
+        unsigned char *codeBase;
+        HCUSTOMMODULE *modules;
+        int numModules;
+        int initialized;
+        int isDLL;
+        int isRelocated;
+        CustomLoadLibraryFunc loadLibrary;
+        CustomGetProcAddressFunc getProcAddress;
+        CustomFreeLibraryFunc freeLibrary;
+        void *userdata;
+        ExeEntryProc exeEntry;
+    } MEMORYMODULE, *PMEMORYMODULE;
 
 
 /**
