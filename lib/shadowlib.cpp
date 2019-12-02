@@ -140,10 +140,10 @@ PCHAR NOINLINE shadow_valloc(HANDLE process, void* address, DWORD size, DWORD pr
 {
     if (USER_LAND_FUNCTIONS)
     {
-        log("valloc %p %p %d %x %x => ", process, address, size, protect, flags);
         PVOID result = VirtualAllocEx(process, address, size, flags, protect);
-        DebugUserLandResult(result, "VirtualAllocEx(%p, %p, %d)", process, address, size);
+        log("valloc %p %p %d %x %x => ", process, address, size, protect, flags);
         shadow_vprint(process, result, 1);
+        DebugUserLandResult(result, "VirtualAllocEx(%p, %p, %d)", process, address, size);
         return PCHAR(result);
     }
     else
@@ -170,6 +170,13 @@ PCHAR shadow_valloc(void* address, DWORD size, DWORD protect, DWORD flags)
 
 bool NOINLINE shadow_vread(HANDLE process, void* address, void* buffer, DWORD size)
 {
+    auto status = shadow_get_process_status(process);
+    if (!status)
+    {
+        log("shadow_vread failed: process has terminated with exit_code=%d\n", status.exit_code);
+        return false;
+    }
+
     SIZE_T read;
     if (USER_LAND_FUNCTIONS)
     {
@@ -192,6 +199,13 @@ bool shadow_vread(void* address, void* buffer, DWORD size)
 
 bool NOINLINE shadow_vwrite(HANDLE process, void* address, void* buffer, DWORD size)
 {
+    auto status = shadow_get_process_status(process);
+    if (!status)
+    {
+        log("shadow_vwrite failed: process has terminated with exit_code=%d\n", status.exit_code);
+        return false;
+    }
+
     DWORD written;
     if (USER_LAND_FUNCTIONS)
     {
@@ -819,6 +833,49 @@ HANDLE NOINLINE shadow_open_process_all_access(DWORD processId)
     return process;
 }
 
+
+ExitStatus shadow_get_process_status(HANDLE process)
+{
+    ExitStatus status;
+    if (GetExitCodeProcess(process, &status.exit_code) && status.exit_code == STILL_ACTIVE)
+    {
+        status.exit_code = 0;
+        status.is_running = true;
+    }
+    return status;
+}
+ExitStatus shadow_get_process_status(DWORD processId)
+{
+    ExitStatus status;
+    if (HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId))
+    {
+        status = shadow_get_process_status(process);
+        CloseHandle(process);
+    }
+    return status;
+}
+
+
+ExitStatus shadow_get_thread_status(HANDLE thread)
+{
+    ExitStatus status;
+    if (GetExitCodeThread(thread, &status.exit_code) && status.exit_code == STILL_ACTIVE)
+    {
+        status.exit_code = 0;
+        status.is_running = true;
+    }
+    return status;
+}
+ExitStatus shadow_get_thread_status(DWORD threadId)
+{
+    ExitStatus status;
+    if (HANDLE thread = OpenThread(THREAD_QUERY_LIMITED_INFORMATION, FALSE, threadId))
+    {
+        status = shadow_get_thread_status(thread);
+        CloseHandle(thread);
+    }
+    return status;
+}
 
 
 const char* shadow_getsyserr(long error)

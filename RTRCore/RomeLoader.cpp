@@ -221,7 +221,6 @@ namespace core
         STARTUPINFO si = { sizeof(si) };
         PROCESS_INFORMATION pi = { nullptr, nullptr };
 
-
         SECURITY_ATTRIBUTES sa;
         if (!CreateSecurityAttributes(sa))
         {
@@ -276,62 +275,62 @@ namespace core
         return false;
     }
 
-
-
     // tries to inject DLL and possibly Attach the VSJIT debugger; RomeTW is launched on success
     static bool InjectAttach(const CoreSettings& st, PROCESS_INFORMATION& pi)
     {
-        DecompressedData gameEngine = unpack_resource(IDR_DLL_GAMEENGINE);
-        //bool useFileInject = ValidateGameEngineDll(gameEngine.size);
-        bool useFileInject = false; // rpp::file_exists("GameEngine.dll");
-        if (st.DebugAttach)
+        try
         {
-            logsec(secOK, "VS JIT Attach\n");
-            char jitcommand[MAX_PATH];
-            sprintf(jitcommand, "vsjitdebugger.exe -p %d", pi.dwProcessId);
-            
-            logsec(secOK, "Launching %s\n", jitcommand);
-            int result = system(jitcommand);
-            if (result != S_OK) logsec(secFF, "Debugger Attach Failed: %p\n", result);
-
-            if (!useFileInject) // nonfatal error case
-                logsec(secFF, "Failed to detect GameEngine.dll, reverting to RESOURCE inject\n");
-        }
-
-        bool injectSuccess = !st.Inject; // if injecting assume false, otherwise assume true
-        if (st.Inject)
-        {
-            logsec(secOK, "Opening process with PROCESS_ALL_ACCESS privileges\n");
-            HANDLE process = pi.hProcess; // shadow_open_process_all_access(pi.dwProcessId);
-
-            // reserve just enough memory for RomeTW-ALX.exe
-            logsec(secOK, "Reserving target memory\n");
-            remote_dll_injector::reserve_target_memory(process, 0x0269ea9e);
-            if (useFileInject)
+            DecompressedData gameEngine = unpack_resource(IDR_DLL_GAMEENGINE);
+            //bool useFileInject = ValidateGameEngineDll(gameEngine.size);
+            bool useFileInject = true; // rpp::file_exists("GameEngine.dll");
+            if (st.DebugAttach)
             {
-                // for debugger inject and if it exists, we use GameEngine.dll FILE
-                logsec(secOK, "Injecting DEBUG .\\GameEngine.dll...\n");
-                injectSuccess = remote_dll_injector::inject_dllfile(process, "GameEngine.dll");
+                logsec(secOK, "VS JIT Attach\n");
+                char jitcommand[MAX_PATH];
+                sprintf(jitcommand, "vsjitdebugger.exe -p %d", pi.dwProcessId);
+                
+                logsec(secOK, "Launching %s\n", jitcommand);
+                int result = system(jitcommand);
+                if (result != S_OK) // nonfatal
+                    logsec(secFF, "Debugger Attach Failed: %p\n", result);
+
+                if (!useFileInject) // nonfatal
+                    logsec(secFF, "Failed to detect GameEngine.dll, reverting to RESOURCE inject\n");
             }
-            else
+            if (st.Inject)
             {
-                // for non-debugger inject, we use the internal DLL resource
-                remote_dll_injector injector = remote_dll_injector{gameEngine.data};
-                injectSuccess = (bool)injector;
-                if (injectSuccess) {
-                    logsec(secOK, "Injecting RESOURCE GameEngine.dll...\n");
-                    injectSuccess = (bool)injector.inject_dllimage(process);
+                logsec(secOK, "Opening process with PROCESS_ALL_ACCESS privileges\n");
+                HANDLE process = pi.hProcess; // shadow_open_process_all_access(pi.dwProcessId);
+
+                // reserve just enough memory for RomeTW-ALX.exe
+                logsec(secOK, "Reserving target memory\n");
+                remote_dll_injector::reserve_target_memory(process, 0x0269ea9e);
+                if (useFileInject)
+                {
+                    // for debugger inject and if it exists, we use GameEngine.dll FILE
+                    logsec(secOK, "Injecting DEBUG .\\GameEngine.dll...\n");
+                    remote_dll_injector::inject_dllfile(process, "GameEngine.dll");
                 }
-                else logsec(secFF, "Error: GameEngine.dll embedded resource not found!");
-            }
-        }
+                else
+                {
+                    if (!gameEngine.data)
+                        throw std::runtime_error{"Error: GameEngine.dll embedded resource not found!"};
 
-        if (injectSuccess) {
+                    // for non-debugger inject, we use the internal DLL resource
+                    logsec(secOK, "Injecting RESOURCE GameEngine.dll...\n");
+                    remote_dll_injector{gameEngine.data}.inject_dllimage(process);
+                }
+            }
+
             logsec(secOK, "Launching the game!\n\n");
             ResumeThread(pi.hThread); // Launch!!! Only useful if injector didn't resume the main thread
             return true;
         }
-        return false;
+        catch (const std::exception& e)
+        {
+            logsec(secFF, "Injector failed: %s\n", e.what());
+            return false;
+        }
     }
 
 }

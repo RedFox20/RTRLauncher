@@ -10,6 +10,8 @@ namespace core
 {
     LauncherCore::LauncherCore()
     {
+        console_initialize("RTR Launcher");
+        console_size(90, 1000, 90, 40);
         logger_init("launcher.log"); // yeah we're gonna need this for debugz
         log(" === Welcome to Rome Launcher ===\n");
 

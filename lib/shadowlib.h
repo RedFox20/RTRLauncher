@@ -281,5 +281,25 @@ bool shadow_listmodules(std::vector<std::string>& modules);
 HANDLE shadow_open_process_all_access(DWORD processId);
 
 
+struct ExitStatus
+{
+    DWORD exit_code = 0;
+    bool is_running = false;
+    explicit operator bool() const { return is_running; }
+};
+
+/**
+ * @return Status and exit code of the process
+ */
+ExitStatus shadow_get_process_status(HANDLE process);
+ExitStatus shadow_get_process_status(DWORD processId);
+
+/**
+ * @return Status and exit code of the thread
+ */
+ExitStatus shadow_get_thread_status(HANDLE thread);
+ExitStatus shadow_get_thread_status(DWORD threadId);
+
+
 const char* shadow_getsyserr(long error = 0);
 

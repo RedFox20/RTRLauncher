@@ -95,39 +95,39 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID reserved)
             log("[*!*]      Injecting Patch       [*!*]\n");
 
             ExeEntryProc entryProc = nullptr;
-            if (memory_map mmap = memory_map::open("RTRGameEngine"))
-            {
-                map_view view = mmap.create_view();
+            //if (memory_map mmap = memory_map::open("RTRGameEngine"))
+            //{
+            //    map_view view = mmap.create_view();
 
-                // unmap the old exe
-                log("DLL Location 0x%p\n", hinstDLL);
-                consolef("======================================\n");
-                shadow_vprint(PVOID(0x00400000), 0x0269ea9e);
-                consolef("======================================\n");
-                consolef("Scanning for modules in range:\n");
-                shadow_scanmodules(PVOID(0x00400000), 0x0269ea9e);
-                consolef("======================================\n");
-                consolef("Unmapping range 0x%p - 0x%p\n", 0x00400000, 0x00400000 + 0x0269ea9e);
-                shadow_unmap(PVOID(0x00400000), 0x0269ea9e);
-                consolef("======================================\n");
-                shadow_vprint(PVOID(0x00400000), 0x0269ea9e);
-                log("======================================\n");
-                if (PMEMORYMODULE module = MemoryLoadLibrary(view, PVOID(0x00400000)))
-                {
-                    log("Module info at 0x%p\n", module);
-                    log("Module data at 0x%p\n", module->codeBase);
-                    entryProc = module->exeEntry;
-                }
-                else
-                {
-                    log("Module load failed\n");
-                }
-                shadow_vprint((void*)0x00400000, 0x0269ea9e);
-            }
+            //    // unmap the old exe
+            //    log("DLL Location 0x%p\n", hinstDLL);
+            //    consolef("======================================\n");
+            //    shadow_vprint(PVOID(0x00400000), 0x0269ea9e);
+            //    consolef("======================================\n");
+            //    consolef("Scanning for modules in range:\n");
+            //    shadow_scanmodules(PVOID(0x00400000), 0x0269ea9e);
+            //    consolef("======================================\n");
+            //    consolef("Unmapping range 0x%p - 0x%p\n", 0x00400000, 0x00400000 + 0x0269ea9e);
+            //    shadow_unmap(PVOID(0x00400000), 0x0269ea9e);
+            //    consolef("======================================\n");
+            //    shadow_vprint(PVOID(0x00400000), 0x0269ea9e);
+            //    log("======================================\n");
+            //    if (PMEMORYMODULE module = MemoryLoadLibrary(view, PVOID(0x00400000)))
+            //    {
+            //        log("Module info at 0x%p\n", module);
+            //        log("Module data at 0x%p\n", module->codeBase);
+            //        entryProc = module->exeEntry;
+            //    }
+            //    else
+            //    {
+            //        log("Module load failed\n");
+            //    }
+            //    shadow_vprint((void*)0x00400000, 0x0269ea9e);
+            //}
 
             log("\n[*!*]     Initializing Game     [*!*]\n");
             //Game.Initialize(PVOID(0x00400000)); // initialize game engine and patch rome
-            //ReinitMainThread(entryProc);
+            ReinitMainThread(entryProc);
 
             //// @warning We must exit the loader thread, since we sometimes overwrite the next DLL
             //// @warning in memory, leading to NT loader segfault when it calls the next DllMain

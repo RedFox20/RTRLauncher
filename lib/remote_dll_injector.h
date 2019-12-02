@@ -29,16 +29,17 @@ struct remote_dll_injector
      * Inject to the specified process
      * Copyright notes: Original code written by zwclose7
      * @param targetProcessHANDLE - Process HANDLE to inject the dll into
+     * @note Throws on failure
      */
-    inject_result inject_dllimage(void* targetProcessHANDLE) const;
+    void inject_dllimage(void* targetProcessHANDLE) const;
 
     /**
      * Inject to the specified process
      * @param targetProcessHANDLE - Process HANDLE to inject the dll into
      * @param filename The filename of the module to load ie: "GameEngine.dll"
-     * @return true on success, false on failure
+     * @note Throws on failure
      */
-    static bool inject_dllfile(void* targetProcessHANDLE, const char* filename);
+    static void inject_dllfile(void* targetProcessHANDLE, const char* filename);
 
     /**
      * Enables DEBUG privileges - sometimes required
