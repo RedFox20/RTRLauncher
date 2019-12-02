@@ -247,7 +247,7 @@
                 /// .text:008D3E1A cmp     edx, 6 ; 3 bytes
                 ((BYTE*)0x008D3E1A)[2] = 0; // change 6 to 0
             }
-            log("    REPLACE  unit size_max 60 => 75\n");
+            log("    REPLACE   unit size_max 60 => 75\n");
             {
                 /// .text:008D3E23 cmp edx, 60     ; 3 bytes
                 ((BYTE*)0x008D3E23)[2] = 75; // change 60 to 75
@@ -281,32 +281,6 @@
                 ///.text:008AC6C8  test    eax, eax   ; 2 bytes
                 ///.text:008AC6CA  jnz     loc_8AD479 ; 6 bytes
                 write_patchcall(0x008AC6C5, 11, SmFactionsHorde_AllChecks2);
-            }
-            //log("    DETOUR  unknown_function  detour_func1\n");
-            {
-                /// for a detour we need 6 bytes:
-                /// push dword TestProcessLoader ; 5 bytes
-                ///	ret                          ; 1 byte
-                /// 68 XX XX XX XX c3
-
-                /// .text:00EC99B0
-                /// push ebp        ; 1 byte
-                /// mov  ebp, esp   ; 2 bytes
-                /// sub  esp, 24h   ; 3 bytes
-
-                //BYTE* p = (BYTE*)0x00EC99B0;
-                //p[0] = 0x68; // PUSH
-                //*(int*)&p[1] = (int)detour_func1;
-                //p[5] = 0xC3; // RET
-
-                
-                //DetourTransactionBegin();
-                //DetourUpdateThread(GetCurrentThread());
-                //DetourAttach(&(PVOID&)Real_Target, AnyFunc<TargetFunc>(&CDetour::My_Target).fptr);
-                //if (DetourTransactionCommit() == S_OK)
-                //	log("    DETOUR  success\n");
-                //else
-                //	log("    DETOUR  failed\n");
             }
 
             // staging atm. so set to false

@@ -7,18 +7,18 @@
 
 struct RomePatcher
 {
-	const GameEngine& Game;
-	RomePatcher(const GameEngine& game);
-	~RomePatcher();
-	
-	/**
-	 * Patches all RTW modules. You should run this after GameEngine has been initialized.
-	 */
-	void RunPatcher(void* exeModule);
+    const GameEngine& Game;
+    explicit RomePatcher(const GameEngine& game);
+    ~RomePatcher();
+    
+    /**
+     * Patches all RTW modules. You should run this after GameEngine has been initialized.
+     */
+    void RunPatcher(void* exeModule);
 
 
-	/**
-	 * Unlocks more regions
-	 */
-	void ApplyRegionsPatch(unlocked_section& map);
+    /**
+     * Unlocks more regions
+     */
+    void ApplyRegionsPatch(unlocked_section& map);
 };

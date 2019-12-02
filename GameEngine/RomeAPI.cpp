@@ -1,13 +1,19 @@
 #include "RomeAPI.h"
 
+struct GameSettings
+{
+    char some_variables[0x2A14];
+    float unit_scale;
+};
+
+GameSettings& settings() { return **(GameSettings**)(0x273845C); }
 
 float RTW::UnitScale()
 {
-	int pSettings = *(int*)(0x273845C);
-	return *(float*)(pSettings + 0x2A14);
+    return settings().unit_scale;
 }
 void RTW::UnitScale(float scale)
 {
-	int pSettings = *(int*)(0x273845C);
-	*(float*)(pSettings + 0x2A14) = scale;
+    settings().unit_scale = scale;
 }
+

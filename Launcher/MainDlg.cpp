@@ -138,7 +138,7 @@ LRESULT CMainDlg::OnOK(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /
     Launcher.Start();
     if (Launcher.LaunchGame())
     {
-        //CloseDialog(wID); // close the launcher on success
+        CloseDialog(wID); // close the launcher on success
     }
     return 0;
 }

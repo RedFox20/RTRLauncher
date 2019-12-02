@@ -34,13 +34,13 @@ DWORD WINAPI APIEntryPoint(void* arg)
     log("[==]      UI Loaded       [==]\n");
 
     consolef("NumThreads %d\n", shadow_get_threadcount());
-    RTW::UnitScale(8.0f);
     consolef("RTW.UnitScale = %.2f\n", RTW::UnitScale());
 
     while (true)
     {
-        Sleep(1000);
-        //consolef("RTW.UnitScale = %.2f\n", RTW::UnitScale());
+        Sleep(5000);
+        //RTW::UnitScale(8.0f);
+        consolef("RTW.UnitScale = %.2f\n", RTW::UnitScale());
     }
     return 0;
 }
@@ -112,8 +112,8 @@ void onProcessAttach(HINSTANCE hinstDLL)
     //}
 
     log("\n[*!*]     Initializing Game     [*!*]\n");
-    //Game.Initialize(PVOID(0x00400000)); // initialize game engine and patch rome
-    //ReinitMainThread(entryProc);
+    Game.Initialize(PVOID(0x00400000)); // initialize game engine and patch rome
+    ReinitMainThread(entryProc);
 }
 
 /**
