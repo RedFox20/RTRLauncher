@@ -33,6 +33,7 @@ static void EnableExtendedCamera(RomeExeVersion ver)
         write_jne(0x095B46D, 0x11);
     }
     else if (ver == RomeALX_1_9)
+    {
     uint_at(0x1528F94)  = 0;    // camera_restriction_set
     uint_at(0x1528F90)  = 0;    // restrict camera
     float_at(0x00FDACD0) = 100.0f   // max camera_restriction_set height
