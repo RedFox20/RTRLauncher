@@ -5,7 +5,7 @@ static void EnableExtendedCamera(RomeExeVersion ver)
 {
     if (ver == RomeTW_1_5)
     {
-        log("    ENABLE    extended_camera RTW 1.5\n");
+        log("    ENABLE    extended_camera  RomeTW_1_5\n");
         uint_at(0x0150F434)  = 0;      // camera_restriction_set
         uint_at(0x0150F430)  = 0;      //  restrict camera
         float_at(0x0FC3B10) = 100.0f; // max TW
@@ -20,7 +20,7 @@ static void EnableExtendedCamera(RomeExeVersion ver)
     }
     else if (ver == RomeTW_1_5_1)
     {
-        log("   ENABLE  extended_camera RTW 1.5.1 (Steam)\n");
+        log("    ENABLE  extended_camera  RomeTW_1_5_1\n");
         uint_at(0x017B1C44)  = 0;      // camera_restriction_set
         uint_at(0x017B1C40)  = 0;      //  restrict camera
         float_at(0x01019DC4) = 100.0f; // max TW

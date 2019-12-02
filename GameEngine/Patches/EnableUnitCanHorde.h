@@ -73,14 +73,14 @@ static void __declspec(naked) SmFactionsHorde_AllChecks2()
 
 static void EnableUnitCanHorde(RomeExeVersion ver)
 {
-    log("    ENABLE    unit can_horde\n");
+    if (ver == RomeALX_1_9)
     {
+        log("    ENABLE    unit can_horde  RomeALX_1_9\n");
         ///.text:008D43D8  test    eax, eax        ; 2 bytes
         ///.text:008D43DA  jnz     loc_8D479D      ; 6 bytes
         write_patchcall(0x008D43D8, 8, UnitCanHorde_EnablePatch);
-    }
-    log("    ENABLE    sm_factions horde\n");
-    {
+
+        log("    ENABLE    sm_factions horde  RomeALX_1_9\n");
         ///.text:008AC6C5  movzx   eax, al    ; 3 bytes
         ///.text:008AC6C8  test    eax, eax   ; 2 bytes
         ///.text:008AC6CA  jnz     loc_8AD479 ; 6 bytes

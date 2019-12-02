@@ -83,10 +83,6 @@ namespace core
                 logsec(secOK, "Opening process with PROCESS_ALL_ACCESS privileges\n");
                 HANDLE process = pi.hProcess; // shadow_open_process_all_access(pi.dwProcessId);
 
-                // reserve just enough memory for RomeTW-ALX.exe
-                logsec(secOK, "Reserving target memory\n");
-                remote_dll_injector::reserve_target_memory(process, 0x0269ea9e);
-
                 logsec(secOK, "Injecting .\\GameEngine.dll...\n");
                 remote_dll_injector::inject_dllfile(process, "GameEngine.dll");
             }

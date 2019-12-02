@@ -1,6 +1,5 @@
 #include "ExtendRegionsLimit.h"
 #include <distorm\distorm.h>
-#include <distorm\mnemonics.h>
 #include <ASM.h>
 #include <RTW/RtwTypes.h>
 #include <log.h>
@@ -29,8 +28,10 @@ static bool InstHasImm32(_DInst& inst)
 }
 
 // @TODO: This doesn't quite work yet, some random crashes here and there
-void ExtendRegionsLimit(unlocked_section& code)
+void ExtendRegionsLimit(RomeExeVersion ver, unlocked_section& code)
 {
+    return; // DISABLED FOR NOW
+
     log("    EXPAND    regions limit => 1092\n");
     log("       REMAP 012EA780 => %8X\n", g_ParserRegions);
 

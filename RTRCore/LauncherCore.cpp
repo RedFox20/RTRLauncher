@@ -86,7 +86,11 @@ namespace core
         for (GameInfo info : std::initializer_list<GameInfo>{
             { GameVersion::RomeALX, GameDir, "RomeTW-ALX.exe" },
             { GameVersion::RomeBI,  GameDir, "RomeTW-BI.exe"  },
-            { GameVersion::RomeTW,  GameDir, "RomeTW.exe"     }, })
+            { GameVersion::RomeTW,  GameDir, "RomeTW.exe"     },
+            { GameVersion::RomeALX, GameDir, "RomeTW-ALX-steam.exe" },
+            { GameVersion::RomeBI,  GameDir, "RomeTW-BI-steam.exe"  },
+            { GameVersion::RomeTW,  GameDir, "RomeTW-steam.exe"     },
+        })
         {
             if (rpp::file_exists(info.FullPath))
                 return info;

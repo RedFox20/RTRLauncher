@@ -83,13 +83,8 @@ RomeExeVersion RunPatcher(const GameEngine& game, const char* exePath, void* exe
         EnableBiggerUnitSize(ver);
         EnableUnitCanSwim(ver);
         EnableUnitCanHorde(ver);
-        //EnableExtendedCamera(ver);
-
-        // staging atm. so set to false
-        if (false)
-        {
-            ExtendRegionsLimit(code);
-        }
+        EnableExtendedCamera(ver);
+        ExtendRegionsLimit(ver, code);
 
         proc.unmap_section(code);
     }
