@@ -11,7 +11,7 @@ namespace core
     LauncherCore::LauncherCore()
     {
         console_initialize("RTR Launcher");
-        console_size(90, 1000, 90, 40);
+        console_size(120, 1000, 120, 40);
         logger_init("launcher.log"); // yeah we're gonna need this for debugz
         log(" === Welcome to Rome Launcher ===\n");
 
@@ -31,7 +31,6 @@ namespace core
         // we need to initialize launcher before we can do anything
         LoadSettings();
 
-        
         Game = GetTargetGameInfo();
         log("GameInfo: %s\n", Game.FullPath.c_str());
     }

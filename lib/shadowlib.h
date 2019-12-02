@@ -301,5 +301,5 @@ ExitStatus shadow_get_thread_status(HANDLE thread);
 ExitStatus shadow_get_thread_status(DWORD threadId);
 
 
-const char* shadow_getsyserr(long error = 0);
+const char* shadow_getsyserr(DWORD error = 0);
 

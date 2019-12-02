@@ -10,7 +10,6 @@ logstream logs;
 
 static HANDLE STDOUT  = nullptr;
 static HANDLE LogFile = nullptr;
-static char Buffer[8192]; // temporary buffer
 
 
 static void close_log()
@@ -41,47 +40,50 @@ void logger_init(const char* logfile, const char* consoleTitle)
 
 logstream& log(const char* fmt, ...)
 {
+    char buffer[8192];
     va_list ap;
     va_start(ap, fmt);
-    logstr(Buffer, vsprintf(Buffer, fmt, ap));
+    logstr(buffer, vsnprintf(buffer, sizeof(buffer), fmt, ap));
     return logs;
 }
 logstream& logstr(const char* str, int len)
 {
     DWORD written;
-    WriteConsoleA(STDOUT, str, len, &written, 0);
+    WriteConsoleA(STDOUT, str, len, &written, nullptr);
     if (LogFile)
-        WriteFile(LogFile, str, len, &written, 0);
+        WriteFile(LogFile, str, len, &written, nullptr);
     return logs;
 }
 
 logstream& logsec(const char* secName, const char* fmt, ...)
 {
+    char buffer[8192];
     va_list ap;
     va_start(ap, fmt);
 
     // write [section]' '
     int seclen = strlen(secName);
-    memcpy(Buffer, secName, seclen);
-    Buffer[seclen++] = ' ';
+    memcpy(buffer, secName, seclen);
+    buffer[seclen++] = ' ';
 
-    logstr(Buffer, seclen + vsprintf(Buffer + seclen, fmt, ap));
+    logstr(buffer, seclen + vsnprintf(buffer + seclen, sizeof(buffer), fmt, ap));
     return logs;
 }
 
 
 logstream& logsec(const char* secName, rpp::strview text)
 {
+    char buffer[8192];
     // write [section]' '
     int seclen = strlen(secName);
-    memcpy(Buffer, secName, seclen);
-    Buffer[seclen++] = ' ';
+    memcpy(buffer, secName, seclen);
+    buffer[seclen++] = ' ';
 
-    memcpy(Buffer+seclen, text.c_str(), text.length());
+    memcpy(buffer+seclen, text.c_str(), text.length());
     seclen += text.length();
-    Buffer[seclen] = '\0';
+    buffer[seclen] = '\0';
 
-    logstr(Buffer, seclen);
+    logstr(buffer, seclen);
     return logs;
 }
 

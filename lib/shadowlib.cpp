@@ -115,8 +115,23 @@ constexpr uint32_t FUNCTION_MASK = 0xCAFEBABE;
     }
 
 
+bool check_process_alive(HANDLE process, const char* where)
+{
+    auto status = shadow_get_process_status(process);
+    if (!status)
+    {
+        log("%s failed: process has terminated with exit_code=0x%X (%s)\n",
+            where, status.exit_code, shadow_getsyserr(status.exit_code));
+        return false;
+    }
+    return true;
+}
+
+
 bool NOINLINE shadow_vquery(HANDLE process, void* address, MEMORY_BASIC_INFORMATION& info)
 {
+    if (!check_process_alive(process, "shadow_vquery"))
+        return false;
     if (USER_LAND_FUNCTIONS)
     {
         BOOL result = VirtualQueryEx(process, address, &info, sizeof(info)) > 0;
@@ -138,10 +153,12 @@ bool shadow_vquery(void* address, MEMORY_BASIC_INFORMATION& info)
 
 PCHAR NOINLINE shadow_valloc(HANDLE process, void* address, DWORD size, DWORD protect, DWORD flags)
 {
+    if (!check_process_alive(process, "shadow_valloc"))
+        return nullptr;
     if (USER_LAND_FUNCTIONS)
     {
         PVOID result = VirtualAllocEx(process, address, size, flags, protect);
-        log("valloc %p %p %d %x %x => ", process, address, size, protect, flags);
+        log("valloc %p %p %d => ", process, address, size);
         shadow_vprint(process, result, 1);
         DebugUserLandResult(result, "VirtualAllocEx(%p, %p, %d)", process, address, size);
         return PCHAR(result);
@@ -170,12 +187,8 @@ PCHAR shadow_valloc(void* address, DWORD size, DWORD protect, DWORD flags)
 
 bool NOINLINE shadow_vread(HANDLE process, void* address, void* buffer, DWORD size)
 {
-    auto status = shadow_get_process_status(process);
-    if (!status)
-    {
-        log("shadow_vread failed: process has terminated with exit_code=%d\n", status.exit_code);
+    if (!check_process_alive(process, "shadow_vread"))
         return false;
-    }
 
     SIZE_T read;
     if (USER_LAND_FUNCTIONS)
@@ -199,12 +212,8 @@ bool shadow_vread(void* address, void* buffer, DWORD size)
 
 bool NOINLINE shadow_vwrite(HANDLE process, void* address, void* buffer, DWORD size)
 {
-    auto status = shadow_get_process_status(process);
-    if (!status)
-    {
-        log("shadow_vwrite failed: process has terminated with exit_code=%d\n", status.exit_code);
+    if (!check_process_alive(process, "shadow_vwrite"))
         return false;
-    }
 
     DWORD written;
     if (USER_LAND_FUNCTIONS)
@@ -232,6 +241,9 @@ bool shadow_vwrite(void* address, void* buffer, DWORD size)
 
 bool NOINLINE shadow_vfree(HANDLE process, void* address)
 {
+    if (!check_process_alive(process, "shadow_vfree"))
+        return false;
+
     if (USER_LAND_FUNCTIONS)
     {
         BOOL result = VirtualFreeEx(process, address, 0, MEM_RELEASE);
@@ -878,8 +890,11 @@ ExitStatus shadow_get_thread_status(DWORD threadId)
 }
 
 
-const char* shadow_getsyserr(long error)
+const char* shadow_getsyserr(DWORD error)
 {
+    if (error == 0xC0000005)
+        return "Memory Access Violation";
+
     static char err[1024];
     DWORD errorCode = error == 0 ? GetLastError() : error;
     FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, errorCode, 0, err, sizeof(err), nullptr);

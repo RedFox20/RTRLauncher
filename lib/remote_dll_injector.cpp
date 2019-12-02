@@ -4,6 +4,7 @@
 #include <log.h>
 #include <shadowlib.h>
 #include <rpp/obfuscated_string.h>
+#include <rpp/scope_guard.h>
 #include <stdexcept>
 
 /**
@@ -170,15 +171,10 @@ static DWORD WINAPI FileLoadDll(FILE_INJECT* injector)
     //// We don't want to pass LoadLibraryA as the CreateRemoteThread
     //// startup function - that method is easily detectable.
     //// That's why we use this proxy instead
-    //Injector->fnAllocConsole();
-    //HANDLE STDOUT = Injector->fnGetStdHandle(STD_OUTPUT_HANDLE);
-    //DWORD written;
-    //Injector->fnWriteConsoleA(STDOUT, "FileLoadDll\n", 12, &written, nullptr);
-    //int len = 0; while (Injector->LibName[len]) ++len;
-    //Injector->fnWriteConsoleA(STDOUT, Injector->LibName, len, &written, nullptr);
-
     injector->LoadedModule = injector->fnLoadLibraryA(injector->LibName);
-    return GetLastError();
+    if (injector->LoadedModule == nullptr)
+        return GetLastError(); // loader failed!
+    return 0;
 }
 #pragma runtime_checks("", restore) // restore any specified runtime checks
 
@@ -268,9 +264,15 @@ void remote_dll_injector::inject_dllfile(void* targetProcessHandle, const char* 
     //  === loader ===
     //  [ global data ]
     //  [ loader code ]
-    DWORD codeSize = 8*1024; // @todo Calculate code size in a reliable way
-    PCHAR loader = shadow_valloc(process, nullptr, codeSize + 4096, PAGE_EXECUTE_READWRITE); // Allocate memory for the loader code
-    if (!loader) throw std::runtime_error{"Unable to allocate memory for loader in remote process"};
+    DWORD codeSize = 4096; // @todo Calculate code size in a reliable way
+    PCHAR loader_data = shadow_valloc(process, nullptr, 4096, PAGE_READWRITE);
+    PCHAR loader_code = shadow_valloc(process, nullptr, codeSize, PAGE_EXECUTE_READWRITE);
+    scope_guard([&] {
+        if (loader_data) shadow_vfree(process, loader_data);
+        if (loader_code) shadow_vfree(process, loader_code);
+    });
+    if (!loader_data) throw std::runtime_error{"Unable to allocate memory for loader DATA in remote process"};
+    if (!loader_code) throw std::runtime_error{"Unable to allocate memory for loader CODE in remote process"};
 
     FILE_INJECT FileInject;
     FileInject.fnLoadLibraryA  = shadow_kernel_getproc<pLoadLibraryA>("LoadLibraryA");
@@ -279,41 +281,30 @@ void remote_dll_injector::inject_dllfile(void* targetProcessHandle, const char* 
     FileInject.fnAllocConsole  = shadow_kernel_getproc<pAllocConsole>("AllocConsole");
     GetFullPathNameA(filename, sizeof(FileInject.LibName), FileInject.LibName, nullptr);
 
-    logsec(secOK, "Allocated loader at: %p\n", loader);
+    logsec(secOK, "Allocated loader DATA: %p  CODE: %p\n", loader_data, loader_code);
     logsec(secOK, "Fullpath: %s\n", FileInject.LibName);
 
-    // Write the loader information to target process
-    shadow_vwrite(process, loader, &FileInject, sizeof(FileInject));
-
-    PCHAR codeAddr = loader + sizeof(FILE_INJECT);
-    codeAddr += reinterpret_cast<int>(codeAddr) % 64; // align code to 64-byte boundary
-
-    // Write the loader code to target process and validate it
-    shadow_vwrite(process, codeAddr, FileLoadDll, codeSize);
-    if (!validate_injected_code(process, codeAddr, FileLoadDll, codeSize))
-        throw std::runtime_error{"Injected Code validation failed! Bytes do not match."};
+    // Write the loader DATA and CODE to target process
+    shadow_vwrite(process, loader_data, &FileInject, sizeof(FileInject));
+    shadow_vwrite(process, loader_code, FileLoadDll, codeSize);
 
     /// @note We never call FreeLibrary, because the remote process will be using it from now on
-    HANDLE hThread = shadow_create_thread(process, LPTHREAD_START_ROUTINE(codeAddr), loader);
+    HANDLE thread = shadow_create_thread(process, LPTHREAD_START_ROUTINE(loader_code), loader_data);
 
     // don't use WaitForSingleObject(hThread, INFINITE); here! Will deadlock if client DLL 
     // creates new thread during load, so we use a silly loop instead
 
     // Wait for loader thread to finish execution and grab the results
     ExitStatus status;
-    while ((status = shadow_get_thread_status(hThread)))
-    {
+    while ((status = shadow_get_thread_status(thread)))
         Sleep(10); // wait for it...
-    }
 
     // Read back the result data
-    shadow_vread(process, loader, &FileInject, sizeof(FileInject));
+    logsec(secOK, "Reading back loader DATA\n");
+    shadow_vread(process, loader_data, &FileInject, sizeof(FileInject));
+    shadow_close_handle(thread);
 
-    // Close thread and unload loader from memory
-    shadow_close_handle(hThread);
-    shadow_vfree(process, loader);
-
-    if (FileInject.LoadedModule) // LoadLibrary failed
+    if (FileInject.LoadedModule == nullptr) // LoadLibrary failed
         throw std::runtime_error{"Remote LoadLibrary failed!"};
 }
 
@@ -333,39 +324,39 @@ void remote_dll_injector::inject_dllimage(void* targetProcessHandle) const
     if (!(NT->FileHeader.Characteristics & IMAGE_FILE_DLL)) // ensure it's a DLL
         throw std::runtime_error{"Image file is not a DLL"};
 
-    HANDLE hProcess = targetProcessHandle;
-    PCHAR image = shadow_valloc(hProcess, nullptr, NT->OptionalHeader.SizeOfImage, PAGE_EXECUTE_READWRITE); // Allocate memory for the DLL
+    HANDLE process = targetProcessHandle;
+    PCHAR image = shadow_valloc(process, nullptr, NT->OptionalHeader.SizeOfImage, PAGE_EXECUTE_READWRITE); // Allocate memory for the DLL
     if (!image) throw std::runtime_error{"Failed to allocate in remote process"};
+    bool freeImage = true;
+    scope_guard([&] { if (freeImage) shadow_vfree(process, image); });
 
     // Copy headers into target process
-    if (!shadow_vwrite(hProcess, image, Image, NT->OptionalHeader.SizeOfHeaders))
-    {
-        shadow_vfree(hProcess, image);
+    if (!shadow_vwrite(process, image, Image, NT->OptionalHeader.SizeOfHeaders))
         throw std::runtime_error{"Unable to copy headers to target process"};
-    }
 
     // Copy sections to target process
     PIMAGE_SECTION_HEADER ISH = IMAGE_FIRST_SECTION(NT);
     for (int i = 0; i < int(NT->FileHeader.NumberOfSections); ++i)
     {
         IMAGE_SECTION_HEADER& sec = ISH[i];
-        shadow_vwrite(hProcess, image + sec.VirtualAddress, PCHAR(Image) + sec.PointerToRawData, sec.SizeOfRawData);
+        shadow_vwrite(process, image + sec.VirtualAddress, PCHAR(Image) + sec.PointerToRawData, sec.SizeOfRawData);
     }
 
     // allocate memory for the loader code in the remote process
     //  === loader ===
     //  [ global data ]
     //  [ loader code ]
-    DWORD codeSize = 8*1024; // @todo Calculate code size in a reliable way
-    PCHAR loader = shadow_valloc(hProcess, nullptr, codeSize + 4096, PAGE_EXECUTE_READWRITE); // Allocate memory for the loader code
-    if (!loader)
-    {
-        shadow_vfree(hProcess, image);
-        throw std::runtime_error{"Unable to allocate memory for loader in remote process"};
-    }
+    DWORD codeSize = 16*1024; // @todo Calculate code size in a reliable way
+    PCHAR loader_data = shadow_valloc(process, nullptr, 4096, PAGE_READWRITE);
+    PCHAR loader_code = shadow_valloc(process, nullptr, codeSize, PAGE_EXECUTE_READWRITE);
+    scope_guard([&] {
+        if (loader_data) shadow_vfree(process, loader_data);
+        if (loader_code) shadow_vfree(process, loader_code);
+    });
+    if (!loader_data) throw std::runtime_error{"Unable to allocate memory for loader DATA in remote process"};
+    if (!loader_code) throw std::runtime_error{"Unable to allocate memory for loader CODE in remote process"};
 
-    logsec(secOK, "Allocated loader at: %p\n", loader);
-
+    logsec(secOK, "Allocated loader DATA: %p  CODE: %p\n", loader_data, loader_code);
     MANUAL_INJECT ManualInject;
     ManualInject.Err[0]    = '\0';
     ManualInject.ImageBase = image;
@@ -378,52 +369,35 @@ void remote_dll_injector::inject_dllimage(void* targetProcessHandle) const
     ManualInject.fnGetStdHandle   = shadow_kernel_getproc<pGetStdHandle>("GetStdHandle");
     ManualInject.fnAllocConsole   = shadow_kernel_getproc<pAllocConsole>("AllocConsole");
 
-    // Write the loader information to target process
-    shadow_vwrite(hProcess, loader, &ManualInject, sizeof(ManualInject));
-
-    PCHAR codeAddr = loader + sizeof(MANUAL_INJECT);
-    codeAddr += reinterpret_cast<int>(codeAddr) % 64; // align code to 64-byte boundary
-
-    // Write the loader code to target process
-    shadow_vwrite(hProcess, codeAddr, &LoadDll, codeSize);
-    if (!validate_injected_code(hProcess, codeAddr, &LoadDll, codeSize))
-        throw std::runtime_error{"Injected Code validation failed! Bytes do not match."};
+    // Write the loader DATA and CODE to target process
+    shadow_vwrite(process, loader_data, &ManualInject, sizeof(ManualInject));
+    shadow_vwrite(process, loader_code, &LoadDll, codeSize);
 
     // Create a remote thread to execute the loader code
-    HANDLE hThread = shadow_create_thread(hProcess, LPTHREAD_START_ROUTINE(codeAddr), loader);
-    if (!hThread)
-    {
-        shadow_vfree(hProcess, loader);
-        shadow_vfree(hProcess, image);
-        throw std::runtime_error{"Unable to create remote thread for loader."};
-    }
+    HANDLE thread = shadow_create_thread(process, LPTHREAD_START_ROUTINE(loader_code), loader_data);
+    if (!thread) throw std::runtime_error{"Unable to create remote thread for loader."};
 
     // Wait for loader thread to finish execution and grab the results
     ExitStatus status;
-    while ((status = shadow_get_thread_status(hThread)))
-    {
+    while ((status = shadow_get_thread_status(thread)))
         Sleep(10); // wait for it...
-    }
 
     // load back the injection struct to get the error string
-    shadow_vread(hProcess, loader, &ManualInject, sizeof(ManualInject));
-
-    // Close thread and unload loader from memory
-    shadow_close_handle(hThread);
-    shadow_vfree(hProcess, loader);
+    logsec(secOK, "Reading back loader DATA\n");
+    shadow_vread(process, loader_data, &ManualInject, sizeof(ManualInject));
+    shadow_close_handle(thread);
 
     auto injectResult = ManualInjectResult(status.exit_code);
     if (injectResult != DllMainSuccess) // on failure release the image
     {
         logsec(secFF, "Loader failed during runtime (ErrCode %d): '%s' (%s) in module %s\n",
             status.exit_code, string(injectResult), shadow_getsyserr(status.exit_code), ManualInject.Err);
-
-        shadow_vfree(hProcess, image);
         throw std::runtime_error{"Loader failed during runtime."};
     }
 
     logsec(secOK, "Loader finished successfully\n");
-    // we can't release the image since the remote process might now be using it :)
+    // WARNING: we can't release the image since the remote process might now be using it
+    freeImage = false;
 }
 
 
