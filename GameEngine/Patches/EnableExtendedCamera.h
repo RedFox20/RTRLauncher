@@ -47,5 +47,6 @@ static void EnableExtendedCamera(RomeExeVersion ver)
     write_jne(0x00913935, 0x11);
     write_jne(0x00913937, 0x11);
     write_nops(0x00915B27, 5); //prevents RTS camera from overflowing on max value
+    }
 }
 
