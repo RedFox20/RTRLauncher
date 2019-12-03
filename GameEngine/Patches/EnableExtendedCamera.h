@@ -13,9 +13,9 @@ static void EnableExtendedCamera(RomeExeVersion ver)
         float_at(0x0FC3B08) = 1.2f;   // min TW/RTS
 
         //  prevents TW camera from going below min value
-        write_jne(0x090D15B, 0x11);
-        write_jne(0x095B45D, 0x11);
-        write_jne(0x095B45F, 0x11);
+        write_jne(0x090D15B, 0x02);
+        write_jne(0x095B45D, 0x02);
+        write_jne(0x095B45F, 0x02);
         write_nops(0x090F34F, 5); // prevents RTS camera from overflowing on max value
     }
     else if (ver == RomeTW_1_5_1)
@@ -43,9 +43,9 @@ static void EnableExtendedCamera(RomeExeVersion ver)
         float_at(0x00FDACA4) = 0.0f;     // force min RTS for those not using free look/shift to zoom
       
         //  prevents TW camera from going below min value
-        write_jne(0x00913933, 0x11);
-        write_jne(0x00913935, 0x11);
-        write_jne(0x00913937, 0x11);
+        write_jne(0x00913933, 0x02);
+        write_jne(0x00913935, 0x02);
+        write_jne(0x00913937, 0x02);
         write_nops(0x00915B27, 5); //prevents RTS camera from overflowing on max value
     }
 }
