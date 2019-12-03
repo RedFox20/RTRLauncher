@@ -68,6 +68,6 @@ void GameEngine::MonitorThread()
     {
         Sleep(5000);
         //RTW::UnitScale(8.0f);
-        consolef("RTW.UnitScale = %.2f\n", RTW::UnitScale());
+        //consolef("RTW.UnitScale = %.2f\n", RTW::UnitScale());
     }
 }
