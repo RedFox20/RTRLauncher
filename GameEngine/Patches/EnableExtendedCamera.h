@@ -36,11 +36,11 @@ static void EnableExtendedCamera(RomeExeVersion ver)
     {
     uint_at(0x1528F94)  = 0;    // camera_restriction_set
     uint_at(0x1528F90)  = 0;    // restrict camera
-    float_at(0x00FDACD0) = 100.0f   // max camera_restriction_set height
-    float_at(0x00FDAD80) = 100.0f   // max RTS    
-    float_at(0x00FDACCC) = 100.0f   // max TW
-    float_at(0x00FDACC8) = 0.0f     // min RTS/TW
-    float_at(0x00FDACA4) = 0.0f     // force min RTS for those not using free look/shift to zoom
+    float_at(0x00FDACD0) = 100.0f;   // max camera_restriction_set height
+    float_at(0x00FDAD80) = 100.0f;   // max RTS    
+    float_at(0x00FDACCC) = 100.0f;   // max TW
+    float_at(0x00FDACC8) = 0.0f;     // min RTS/TW
+    float_at(0x00FDACA4) = 0.0f;     // force min RTS for those not using free look/shift to zoom
       
     //  prevents TW camera from going below min value
     write_jne(0x00913933, 0x11);
