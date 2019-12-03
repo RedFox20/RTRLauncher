@@ -73,9 +73,6 @@
     <ClCompile Include="distorm\wstring.c">
       <Filter>distorm</Filter>
     </ClCompile>
-    <ClCompile Include="MemoryModule.c">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="RTW\RomeAPI.cpp">
       <Filter>src\RTW</Filter>
     </ClCompile>
@@ -131,9 +128,6 @@
     </ClInclude>
     <ClInclude Include="distorm\x86defs.h">
       <Filter>distorm</Filter>
-    </ClInclude>
-    <ClInclude Include="MemoryModule.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="Patches\PatchUtils.h">
       <Filter>src\Patches</Filter>

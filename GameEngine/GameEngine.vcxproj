@@ -114,7 +114,6 @@
     <ClCompile Include="distorm\wstring.c" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="GameEngine.cpp" />
-    <ClCompile Include="MemoryModule.c" />
     <ClCompile Include="Patches\ExtendRegionsLimit.cpp" />
     <ClCompile Include="RomePatcher.cpp">
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreprocessToFile>
@@ -139,7 +138,6 @@
     <ClInclude Include="distorm\x86defs.h" />
     <ClInclude Include="GameEngine.h" />
     <ClInclude Include="GameEngineDllParams.h" />
-    <ClInclude Include="MemoryModule.h" />
     <ClInclude Include="Patches\EnableBiggerUnitSize.h" />
     <ClInclude Include="Patches\EnableExtendedCamera.h" />
     <ClInclude Include="Patches\EnableModdedSkyClouds.h" />
