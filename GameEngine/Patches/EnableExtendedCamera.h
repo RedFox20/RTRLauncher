@@ -6,7 +6,7 @@ static void EnableExtendedCamera(RomeExeVersion ver)
     if (ver == RomeTW_1_5)
     {
         log("    ENABLE    extended_camera  RomeTW_1_5\n");
-        uint_at(0x0150F434)  = 0;      // camera_restriction_set
+        write_nops(0x00860900, 10)  = 0;      // camera_restriction_set
         uint_at(0x0150F430)  = 0;      //  restrict camera
         float_at(0x0FC3B10) = 100.0f; // max camera_restriction_set height
         float_at(0x0FC3BC0) = 100.0f; // max TW/RTS
