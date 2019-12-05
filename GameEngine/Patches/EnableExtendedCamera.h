@@ -21,7 +21,7 @@ static void EnableExtendedCamera(RomeExeVersion ver)
     else if (ver == RomeTW_1_5_1)
     {
         log("    ENABLE  extended_camera  RomeTW_1_5_1\n");
-        uint_at(0x017B1C44)  = 0;      // camera_restriction_set
+        write_nops(0x008BEAD3, 10);      // camera_restriction_set
         uint_at(0x017B1C40)  = 0;      //  restrict camera
         float_at(0x01019DC4) = 100.0f; // max restriction_set height
         float_at(0x01019DC8) = 100.0f; // max TW/RTS
@@ -34,7 +34,7 @@ static void EnableExtendedCamera(RomeExeVersion ver)
     }
     else if (ver == RomeALX_1_9)
     {
-        uint_at(0x1528F94)  = 0;    // camera_restriction_set
+        write_nops(0x008634B5, 10); // camera_restriction_set
         uint_at(0x1528F90)  = 0;    // restrict camera
         float_at(0x00FDACD0) = 100.0f;   // max camera_restriction_set height
         float_at(0x00FDAD80) = 100.0f;   // max RTS    
